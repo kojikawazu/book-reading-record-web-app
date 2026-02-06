@@ -76,8 +76,7 @@ export const OrganicShell = ({
         </nav>
 
         <div className="mt-7 rounded-[28px] border border-[color:var(--border)] bg-white/70 p-4 text-xs text-[color:var(--foreground)]/72">
-          <p className="font-bold">仕様固定MVP</p>
-          <p className="mt-1">localStorage / Playwright E2E</p>
+          <p>localStorage / Playwright E2E</p>
         </div>
       </aside>
 
