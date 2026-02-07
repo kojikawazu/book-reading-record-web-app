@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { repository } from "@/lib/repository-instance";
 import { BookFormat, BookStatus } from "@/lib/types";
+import { useAuthSession } from "@/lib/use-auth-session";
 import { normalizeTags, validateBookForm, ValidationErrors } from "@/lib/validation";
 
 export default function NewBookPage() {
   const router = useRouter();
+  const { authRequired, loading: authLoading, isAuthenticated, configError } = useAuthSession();
 
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -25,6 +28,10 @@ export default function NewBookPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (authRequired && !isAuthenticated) {
+      return;
+    }
 
     const parsedTotalPages = Number(totalPages);
     const normalizedTags = normalizeTags(tags);
@@ -65,6 +72,23 @@ export default function NewBookPage() {
     }
   };
 
+  if (authRequired && !authLoading && !isAuthenticated) {
+    return (
+      <OrganicShell
+        title="書籍登録"
+        subtitle="新しい読書対象を記録します"
+        contentTestId="new-book-page"
+        action={
+          <Link href="/" data-testid="book-cancel-link" className="btn-secondary px-4 py-2 text-sm">
+            ダッシュボードへ戻る
+          </Link>
+        }
+      >
+        <AuthRequiredPanel nextPath="/books/new" configError={configError} />
+      </OrganicShell>
+    );
+  }
+
   return (
     <OrganicShell
       title="書籍登録"
@@ -80,9 +104,9 @@ export default function NewBookPage() {
         data-testid="new-book-form"
         onSubmit={handleSubmit}
         noValidate
-        className="panel-card mx-auto w-full max-w-3xl space-y-4 p-5 md:p-6"
+        className="panel-card mx-auto w-full max-w-3xl space-y-6 p-6 md:p-8"
       >
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium text-[color:var(--foreground)]/80">
             タイトル
           </label>
@@ -100,7 +124,7 @@ export default function NewBookPage() {
           )}
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="author" className="text-sm font-medium text-[color:var(--foreground)]/80">
             著者
           </label>
@@ -118,7 +142,7 @@ export default function NewBookPage() {
           )}
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="genre" className="text-sm font-medium text-[color:var(--foreground)]/80">
             ジャンル
           </label>
@@ -136,8 +160,8 @@ export default function NewBookPage() {
           )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
             <label
               htmlFor="format"
               className="text-sm font-medium text-[color:var(--foreground)]/80"
@@ -159,7 +183,7 @@ export default function NewBookPage() {
             </select>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <label
               htmlFor="totalPages"
               className="text-sm font-medium text-[color:var(--foreground)]/80"
@@ -186,7 +210,7 @@ export default function NewBookPage() {
           </div>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="tags" className="text-sm font-medium text-[color:var(--foreground)]/80">
             タグ（カンマ区切り）
           </label>
@@ -204,7 +228,7 @@ export default function NewBookPage() {
           )}
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="status" className="text-sm font-medium text-[color:var(--foreground)]/80">
             初期ステータス
           </label>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UpdateBookInput } from "@/lib/types";
+import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,
   PrismaBookRecordRepository,
@@ -84,6 +85,10 @@ export async function GET(_request: NextRequest, context: Params) {
 
     return NextResponse.json({ book });
   } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
     if (isRepositoryError(error)) {
       return errorResponse(error.message, error.statusCode);
     }
@@ -94,6 +99,7 @@ export async function GET(_request: NextRequest, context: Params) {
 
 export async function PATCH(request: NextRequest, context: Params) {
   try {
+    await requireAuthenticatedUser(request);
     const { id } = await context.params;
     const body = await request.json();
     const patch = parseUpdateBookInput(body);
@@ -105,6 +111,10 @@ export async function PATCH(request: NextRequest, context: Params) {
     const book = await repository.updateBook(id, patch);
     return NextResponse.json({ book });
   } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
     if (isRepositoryError(error)) {
       return errorResponse(error.message, error.statusCode);
     }

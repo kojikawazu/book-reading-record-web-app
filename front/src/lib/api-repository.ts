@@ -7,10 +7,20 @@ import {
   ReflectionInput,
   UpdateBookInput,
 } from "./types";
+import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "./supabase/client";
 
 type ApiError = {
   message?: string;
 };
+
+class HttpError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const readErrorMessage = async (response: Response): Promise<string> => {
   try {
@@ -27,16 +37,31 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 
 export class ApiRepository implements BookRepository {
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    if (!isSupabaseAuthConfigured) {
+      throw new Error("Supabase Authの環境変数が不足しています。");
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    const sessionResult = await supabase.auth.getSession();
+    if (sessionResult.error) {
+      throw new Error("ログインセッションの取得に失敗しました。");
+    }
+
+    const accessToken = sessionResult.data.session?.access_token;
+
+    const headers = new Headers(init?.headers);
+    headers.set("content-type", "application/json");
+    if (accessToken) {
+      headers.set("authorization", `Bearer ${accessToken}`);
+    }
+
     const response = await fetch(path, {
       ...init,
-      headers: {
-        "content-type": "application/json",
-        ...(init?.headers ?? {}),
-      },
+      headers,
     });
 
     if (!response.ok) {
-      throw new Error(await readErrorMessage(response));
+      throw new HttpError(await readErrorMessage(response), response.status);
     }
 
     return (await response.json()) as T;
@@ -48,17 +73,15 @@ export class ApiRepository implements BookRepository {
   }
 
   async getBook(bookId: string): Promise<Book | null> {
-    const response = await fetch(`/api/book-record/books/${bookId}`);
-    if (response.status === 404) {
-      return null;
+    try {
+      const data = await this.request<{ book: Book }>(`/api/book-record/books/${bookId}`);
+      return data.book;
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) {
+        return null;
+      }
+      throw error;
     }
-
-    if (!response.ok) {
-      throw new Error(await readErrorMessage(response));
-    }
-
-    const data = (await response.json()) as { book: Book };
-    return data.book;
   }
 
   async listProgressLogs(bookId: string): Promise<ProgressLog[]> {
