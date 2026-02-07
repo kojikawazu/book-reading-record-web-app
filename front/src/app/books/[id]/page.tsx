@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
+import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { reflectionIsMissing } from "@/lib/helpers";
@@ -190,22 +191,7 @@ export default function BookDetailPage() {
   }
 
   if (!isLoaded) {
-    return (
-      <OrganicShell
-        title="書籍詳細"
-        subtitle="読み込み中"
-        contentTestId="book-detail-page"
-        action={
-          <Link href="/" className="btn-secondary px-4 py-2 text-sm">
-            ダッシュボードへ戻る
-          </Link>
-        }
-      >
-        <div className="panel-soft p-4">
-          <p className="text-sm text-[color:var(--foreground)]/65">読み込み中...</p>
-        </div>
-      </OrganicShell>
-    );
+    return <GlobalLoadingScreen message="書籍データを読み込んでいます..." />;
   }
 
   if (!book) {
