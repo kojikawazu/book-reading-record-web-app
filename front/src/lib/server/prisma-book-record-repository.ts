@@ -1,6 +1,5 @@
 import "server-only";
 
-import { BookRecordFormat, BookRecordStatus } from "@prisma/client";
 import type { BookRecordBook, BookRecordProgressLog, BookRecordReflection } from "@prisma/client";
 import { BookRepository } from "@/lib/repository";
 import {
@@ -257,11 +256,11 @@ export class PrismaBookRecordRepository implements BookRepository {
         title: draft.title.trim(),
         author: draft.author.trim(),
         genre: draft.genre?.trim() ? draft.genre.trim() : null,
-        format: draft.format as BookRecordFormat,
+        format: draft.format as BookRecordBook["format"],
         totalPages: draft.totalPages,
         currentPage: 0,
         tags: draft.tags,
-        status: draft.status as BookRecordStatus,
+        status: draft.status as BookRecordBook["status"],
         completedAt: null,
       },
       include: {
@@ -317,11 +316,11 @@ export class PrismaBookRecordRepository implements BookRepository {
         title: merged.title.trim(),
         author: merged.author.trim(),
         genre: merged.genre?.trim() ? merged.genre.trim() : null,
-        format: merged.format as BookRecordFormat,
+        format: merged.format as BookRecordBook["format"],
         totalPages: merged.totalPages,
         currentPage: merged.currentPage,
         tags: merged.tags,
-        status: status as BookRecordStatus,
+        status: status as BookRecordBook["status"],
         completedAt: status === "completed" ? source.completedAt ?? new Date() : null,
       },
       include: {
@@ -416,7 +415,7 @@ export class PrismaBookRecordRepository implements BookRepository {
         where: { id: bookId },
         data: {
           currentPage: input.page,
-          status: status as BookRecordStatus,
+          status: status as BookRecordBook["status"],
           completedAt,
         },
         include: {
@@ -428,7 +427,7 @@ export class PrismaBookRecordRepository implements BookRepository {
           bookId,
           page: input.page,
           memo: input.memo?.trim() || null,
-          status: status as BookRecordStatus,
+          status: status as BookRecordBook["status"],
           loggedAt,
         },
       }),
