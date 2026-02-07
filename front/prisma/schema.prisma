@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ExerciseCardio {
+  id             String         @id
+  recordId       String         @unique
+  type           String
+  minutes        Float
+  distance       Float
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  ExerciseRecord ExerciseRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+}
+
+model ExerciseMaster {
+  id        String   @id
+  type      String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([type, name])
+  @@index([name])
+  @@index([type])
+}
+
+model ExerciseProfile {
+  id        String   @id
+  weightKg  Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model ExerciseRecord {
+  id              String            @id
+  date            DateTime          @unique
+  memo            String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  ExerciseCardio  ExerciseCardio?
+  ExerciseWorkout ExerciseWorkout[]
+
+  @@index([createdAt])
+  @@index([date])
+}
+
+model ExerciseWorkout {
+  id             String         @id
+  recordId       String
+  part           String
+  name           String
+  sets           Float
+  reps           Float
+  weight         Float
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  ExerciseRecord ExerciseRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Report {
+  id               String             @id
+  title            String
+  summary          String?
+  content          String
+  category         String
+  author           String
+  publishDate      DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  ReportTagMapping ReportTagMapping[]
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([publishDate])
+}
+
+model ReportTag {
+  id               String             @id
+  name             String             @unique
+  createdAt        DateTime           @default(now())
+  ReportTagMapping ReportTagMapping[]
+
+  @@index([name])
+}
+
+model ReportTagMapping {
+  id          String    @id
+  reportId    String
+  reportTagId String
+  createdAt   DateTime  @default(now())
+  Report      Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  ReportTag   ReportTag @relation(fields: [reportTagId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, reportTagId])
+  @@index([reportId])
+  @@index([reportTagId])
+}
+
+model VideoEntry {
+  id           String    @id
+  youtubeUrl   String
+  title        String
+  thumbnailUrl String
+  tags         String[]
+  category     String
+  goodPoints   String
+  memo         String
+  rating       Int
+  publishDate  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+
+  @@index([createdAt])
+  @@index([publishDate])
+  @@index([rating])
+}
+
+model BookRecordBook {
+  id           String                  @id @default(uuid()) @db.Uuid
+  title        String                  @db.VarChar(200)
+  author       String                  @db.VarChar(120)
+  genre        String?                 @db.VarChar(80)
+  format       BookRecordFormat
+  totalPages   Int                     @map("total_pages")
+  currentPage  Int                     @default(0) @map("current_page")
+  tags         String[]                @default([])
+  status       BookRecordStatus        @default(not_started)
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+  completedAt  DateTime?               @map("completed_at")
+  progressLogs BookRecordProgressLog[]
+  reflection   BookRecordReflection?
+
+  @@index([title])
+  @@index([author])
+  @@index([status, updatedAt(sort: Desc)])
+  @@index([updatedAt(sort: Desc), createdAt(sort: Desc)])
+  @@map("BookRecordBooks")
+}
+
+model BookRecordProgressLog {
+  id       String           @id @default(uuid()) @db.Uuid
+  bookId   String           @map("book_id") @db.Uuid
+  page     Int
+  memo     String?          @db.VarChar(5000)
+  status   BookRecordStatus
+  loggedAt DateTime         @default(now()) @map("logged_at")
+  book     BookRecordBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId, loggedAt(sort: Desc)])
+  @@index([loggedAt(sort: Desc)])
+  @@map("BookRecordProgressLogs")
+}
+
+model BookRecordReflection {
+  id        String         @id @default(uuid()) @db.Uuid
+  bookId    String         @unique @map("book_id") @db.Uuid
+  learning  String         @default("") @db.VarChar(5000)
+  action    String         @default("") @db.VarChar(5000)
+  quote     String         @default("") @db.VarChar(5000)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  book      BookRecordBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@map("BookRecordReflections")
+}
+
+enum BookRecordStatus {
+  not_started
+  reading
+  paused
+  completed
+}
+
+enum BookRecordFormat {
+  paper
+  ebook
+  audio
+}

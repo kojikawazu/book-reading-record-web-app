@@ -5,21 +5,24 @@ import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/lib/constants";
 import { computeWeeklySummary } from "@/lib/helpers";
 import { repository } from "@/lib/repository-instance";
-import { Book } from "@/lib/types";
+import { Book, ProgressLog } from "@/lib/types";
 
 const toPercent = (value: number): number => Math.round(value * 1000) / 10;
 
 export default function StatsPage() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [logs, setLogs] = useState(repository.readRawPayload().progressLogs);
+  const [logs, setLogs] = useState<ProgressLog[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
         const loadedBooks = await repository.listBooks();
+        const logsByBook = await Promise.all(
+          loadedBooks.map(async (book) => repository.listProgressLogs(book.id))
+        );
         setBooks(loadedBooks);
-        setLogs(repository.readRawPayload().progressLogs);
+        setLogs(logsByBook.flat());
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "統計データの読み込みに失敗しました。";
