@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
+import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { repository } from "@/lib/repository-instance";
@@ -71,6 +72,10 @@ export default function NewBookPage() {
       setSaving(false);
     }
   };
+
+  if (authRequired && authLoading) {
+    return <GlobalLoadingScreen message="認証状態を確認しています..." />;
+  }
 
   if (authRequired && !authLoading && !isAuthenticated) {
     return (

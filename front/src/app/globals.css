@@ -39,6 +39,34 @@ body {
   min-height: 100vh;
 }
 
+.global-loading-canvas {
+  background:
+    radial-gradient(circle at 10% 12%, rgba(129, 178, 154, 0.28), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(234, 227, 219, 0.95), transparent 38%), var(--background);
+}
+
+.global-loading-panel {
+  border: 1px solid rgba(61, 64, 91, 0.14);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 28px 60px rgba(61, 64, 91, 0.12);
+}
+
+.global-loading-spinner {
+  border: 4px solid rgba(129, 178, 154, 0.2);
+  border-top-color: var(--accent-strong);
+  animation: loading-spin 0.9s linear infinite;
+}
+
+@keyframes loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .theme-canvas {
   min-height: 100vh;
   color: var(--foreground);

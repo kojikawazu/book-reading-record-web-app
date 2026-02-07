@@ -114,6 +114,7 @@ const Section = ({
 export default function DashboardPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
@@ -131,6 +132,8 @@ export default function DashboardPage() {
       } catch (error) {
         const message = error instanceof Error ? error.message : "データの読み込みに失敗しました。";
         setErrorMessage(message);
+      } finally {
+        setIsLoaded(true);
       }
     };
 
@@ -234,149 +237,167 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {recoveryNotice && (
-        <p data-testid="recovery-message" className="notice-warn p-3 text-sm">
-          破損したデータを検知したため初期化し、バックアップを作成しました。
-        </p>
-      )}
-
-      {errorMessage && (
-        <p data-testid="dashboard-error" className="notice-danger p-3 text-sm">
-          {errorMessage}
-        </p>
-      )}
-
-      {invalidBookCount > 0 && (
-        <p data-testid="invalid-book-warning" className="notice-danger p-3 text-sm">
-          総ページ数が不正な書籍が {invalidBookCount} 件あるため表示対象から除外しました。
-        </p>
-      )}
-
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-        <div className="space-y-4 xl:col-span-2">
-          <section className="panel-soft p-5">
-            <label
-              htmlFor="search"
-              className="mb-2 block text-sm font-medium text-[color:var(--foreground)]/78"
-            >
-              検索
-            </label>
-            <input
-              id="search"
-              data-testid="search-input"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="タイトル・著者・タグで検索"
-              className="field-input"
-            />
-          </section>
-
-          <section
-            data-testid="weekly-summary"
-            className="panel-soft grid gap-3 p-4 sm:grid-cols-3"
-          >
-            <div className="panel-subtle px-3 py-3">
-              <p className="text-xs text-[color:var(--foreground)]/58">直近7日の読了ページ数</p>
-              <p
-                data-testid="weekly-read-pages"
-                className="text-2xl font-bold text-[color:var(--foreground)]"
-              >
-                {weeklySummary.readPages}
-              </p>
-            </div>
-            <div className="panel-subtle px-3 py-3">
-              <p className="text-xs text-[color:var(--foreground)]/58">直近7日の進捗記録回数</p>
-              <p
-                data-testid="weekly-progress-count"
-                className="text-2xl font-bold text-[color:var(--foreground)]"
-              >
-                {weeklySummary.progressCount}
-              </p>
-            </div>
-            <div className="panel-subtle px-3 py-3">
-              <p className="text-xs text-[color:var(--foreground)]/58">直近7日の感想数</p>
-              <p
-                data-testid="weekly-reflection-count"
-                className="text-2xl font-bold text-[color:var(--foreground)]"
-              >
-                {weeklySummary.reflectionCount}
-              </p>
-            </div>
-          </section>
-
-          <div className="space-y-4">
-            {SECTION_CONFIG.map((section) => (
-              <Section
-                key={section.status}
-                title={STATUS_LABELS[section.status]}
-                testId={section.testId}
-                books={booksByStatus.get(section.status) ?? []}
-                tone={section.status}
+      {!isLoaded ? (
+        <section data-testid="dashboard-loading" className="panel-soft space-y-4 p-5">
+          <p className="text-sm font-medium text-[color:var(--foreground)]/72">
+            ダッシュボードデータを読み込み中です...
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-24 animate-pulse rounded-2xl bg-[color:var(--background-soft)]/70"
               />
             ))}
-
-            <Section
-              title="感想未記入"
-              testId="section-pending-reflection"
-              books={pendingReflections}
-              tone="pending_reflection"
-            />
           </div>
-        </div>
+        </section>
+      ) : (
+        <>
+          {recoveryNotice && (
+            <p data-testid="recovery-message" className="notice-warn p-3 text-sm">
+              破損したデータを検知したため初期化し、バックアップを作成しました。
+            </p>
+          )}
 
-        <aside className="space-y-4">
-          <section className="panel-soft p-6">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <span className="text-base">🏅</span>
-              今週のバッジ
-            </h3>
-            <div className="mt-4 space-y-3">
-              {badges.map((badge) => (
-                <article
-                  key={badge.id}
-                  className={`rounded-2xl border p-3 ${
-                    badge.achieved
-                      ? "border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10"
-                      : "border-[color:var(--border)] bg-white/70"
-                  }`}
+          {errorMessage && (
+            <p data-testid="dashboard-error" className="notice-danger p-3 text-sm">
+              {errorMessage}
+            </p>
+          )}
+
+          {invalidBookCount > 0 && (
+            <p data-testid="invalid-book-warning" className="notice-danger p-3 text-sm">
+              総ページ数が不正な書籍が {invalidBookCount} 件あるため表示対象から除外しました。
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+            <div className="space-y-4 xl:col-span-2">
+              <section className="panel-soft p-5">
+                <label
+                  htmlFor="search"
+                  className="mb-2 block text-sm font-medium text-[color:var(--foreground)]/78"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-xl">{badge.icon}</span>
-                      <div>
-                        <p className="text-sm font-bold text-[color:var(--foreground)]">
-                          {badge.label}
-                        </p>
-                        <p className="text-xs text-[color:var(--foreground)]/62">
-                          {badge.condition}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                  検索
+                </label>
+                <input
+                  id="search"
+                  data-testid="search-input"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="タイトル・著者・タグで検索"
+                  className="field-input"
+                />
+              </section>
+
+              <section
+                data-testid="weekly-summary"
+                className="panel-soft grid gap-3 p-4 sm:grid-cols-3"
+              >
+                <div className="panel-subtle px-3 py-3">
+                  <p className="text-xs text-[color:var(--foreground)]/58">直近7日の読了ページ数</p>
+                  <p
+                    data-testid="weekly-read-pages"
+                    className="text-2xl font-bold text-[color:var(--foreground)]"
+                  >
+                    {weeklySummary.readPages}
+                  </p>
+                </div>
+                <div className="panel-subtle px-3 py-3">
+                  <p className="text-xs text-[color:var(--foreground)]/58">直近7日の進捗記録回数</p>
+                  <p
+                    data-testid="weekly-progress-count"
+                    className="text-2xl font-bold text-[color:var(--foreground)]"
+                  >
+                    {weeklySummary.progressCount}
+                  </p>
+                </div>
+                <div className="panel-subtle px-3 py-3">
+                  <p className="text-xs text-[color:var(--foreground)]/58">直近7日の感想数</p>
+                  <p
+                    data-testid="weekly-reflection-count"
+                    className="text-2xl font-bold text-[color:var(--foreground)]"
+                  >
+                    {weeklySummary.reflectionCount}
+                  </p>
+                </div>
+              </section>
+
+              <div className="space-y-4">
+                {SECTION_CONFIG.map((section) => (
+                  <Section
+                    key={section.status}
+                    title={STATUS_LABELS[section.status]}
+                    testId={section.testId}
+                    books={booksByStatus.get(section.status) ?? []}
+                    tone={section.status}
+                  />
+                ))}
+
+                <Section
+                  title="感想未記入"
+                  testId="section-pending-reflection"
+                  books={pendingReflections}
+                  tone="pending_reflection"
+                />
+              </div>
+            </div>
+
+            <aside className="space-y-4">
+              <section className="panel-soft p-6">
+                <h3 className="flex items-center gap-2 text-lg font-bold">
+                  <span className="text-base">🏅</span>
+                  今週のバッジ
+                </h3>
+                <div className="mt-4 space-y-3">
+                  {badges.map((badge) => (
+                    <article
+                      key={badge.id}
+                      className={`rounded-2xl border p-3 ${
                         badge.achieved
-                          ? "bg-[color:var(--accent)] text-white"
-                          : "bg-[color:var(--background-soft)] text-[color:var(--foreground)]/72"
+                          ? "border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10"
+                          : "border-[color:var(--border)] bg-white/70"
                       }`}
                     >
-                      {badge.achieved ? "達成" : "未達成"}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <span className="text-xl">{badge.icon}</span>
+                          <div>
+                            <p className="text-sm font-bold text-[color:var(--foreground)]">
+                              {badge.label}
+                            </p>
+                            <p className="text-xs text-[color:var(--foreground)]/62">
+                              {badge.condition}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                            badge.achieved
+                              ? "bg-[color:var(--accent)] text-white"
+                              : "bg-[color:var(--background-soft)] text-[color:var(--foreground)]/72"
+                          }`}
+                        >
+                          {badge.achieved ? "達成" : "未達成"}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
 
-          <section className="rounded-[40px] bg-[#3d405b] p-6 text-white shadow-lg">
-            <h3 className="text-lg font-bold">運用メモ</h3>
-            <ul className="mt-4 space-y-2 text-sm text-white/85">
-              <li>完読時に感想を保存</li>
-              <li>再読時はページ0から再開</li>
-              <li>感想は再完読で再編集可能</li>
-            </ul>
-          </section>
-        </aside>
-      </div>
+              <section className="rounded-[40px] bg-[#3d405b] p-6 text-white shadow-lg">
+                <h3 className="text-lg font-bold">運用メモ</h3>
+                <ul className="mt-4 space-y-2 text-sm text-white/85">
+                  <li>完読時に感想を保存</li>
+                  <li>再読時はページ0から再開</li>
+                  <li>感想は再完読で再編集可能</li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </>
+      )}
     </OrganicShell>
   );
 }
