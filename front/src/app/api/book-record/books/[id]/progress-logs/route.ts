@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CreateProgressLogInput } from "@/lib/types";
+import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,
   PrismaBookRecordRepository,
@@ -57,6 +58,10 @@ export async function GET(_request: NextRequest, context: Params) {
     const logs = await repository.listProgressLogs(id);
     return NextResponse.json({ logs });
   } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
     if (isRepositoryError(error)) {
       return errorResponse(error.message, error.statusCode);
     }
@@ -67,6 +72,7 @@ export async function GET(_request: NextRequest, context: Params) {
 
 export async function POST(request: NextRequest, context: Params) {
   try {
+    await requireAuthenticatedUser(request);
     const { id } = await context.params;
     const body = await request.json();
     const input = parseCreateProgressInput(body);
@@ -78,6 +84,10 @@ export async function POST(request: NextRequest, context: Params) {
     const payload = await repository.addProgressLog(id, input);
     return NextResponse.json(payload, { status: 201 });
   } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
     if (isRepositoryError(error)) {
       return errorResponse(error.message, error.statusCode);
     }

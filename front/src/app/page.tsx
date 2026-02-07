@@ -15,6 +15,24 @@ const SECTION_CONFIG: Array<{ status: BookStatus; testId: string }> = [
   { status: "completed", testId: "section-completed" },
 ];
 
+type SectionTone = BookStatus | "pending_reflection";
+
+const SECTION_TONE_CLASS: Record<SectionTone, string> = {
+  not_started: "section-tone-not-started",
+  reading: "section-tone-reading",
+  paused: "section-tone-paused",
+  completed: "section-tone-completed",
+  pending_reflection: "section-tone-pending-reflection",
+};
+
+const SECTION_DOT_CLASS: Record<SectionTone, string> = {
+  not_started: "section-dot-not-started",
+  reading: "section-dot-reading",
+  paused: "section-dot-paused",
+  completed: "section-dot-completed",
+  pending_reflection: "section-dot-pending-reflection",
+};
+
 const filterBooksByQuery = (books: Book[], query: string): Book[] => {
   const normalized = query.trim().toLocaleLowerCase();
 
@@ -61,10 +79,23 @@ const BookCard = ({ book }: { book: Book }) => {
   );
 };
 
-const Section = ({ title, testId, books }: { title: string; testId: string; books: Book[] }) => {
+const Section = ({
+  title,
+  testId,
+  books,
+  tone,
+}: {
+  title: string;
+  testId: string;
+  books: Book[];
+  tone: SectionTone;
+}) => {
   return (
-    <section data-testid={testId} className="panel-soft space-y-3 p-5">
-      <h2 className="text-lg font-semibold text-[color:var(--foreground)]">{title}</h2>
+    <section data-testid={testId} className={`panel-soft ${SECTION_TONE_CLASS[tone]} space-y-3 p-5`}>
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-[color:var(--foreground)]">
+        <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${SECTION_DOT_CLASS[tone]}`} />
+        {title}
+      </h2>
       {books.length === 0 ? (
         <p data-testid={`${testId}-empty`} className="text-sm text-[color:var(--foreground)]/60">
           データがありません。
@@ -280,6 +311,7 @@ export default function DashboardPage() {
                 title={STATUS_LABELS[section.status]}
                 testId={section.testId}
                 books={booksByStatus.get(section.status) ?? []}
+                tone={section.status}
               />
             ))}
 
@@ -287,6 +319,7 @@ export default function DashboardPage() {
               title="感想未記入"
               testId="section-pending-reflection"
               books={pendingReflections}
+              tone="pending_reflection"
             />
           </div>
         </div>

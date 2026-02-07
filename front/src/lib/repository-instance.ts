@@ -21,5 +21,7 @@ const decideDriver = (): "local" | "supabase" => {
 
 const driver = decideDriver();
 
+export const repositoryDriver = driver;
+
 export const repository: BookRepository =
   driver === "supabase" ? new ApiRepository() : new LocalStorageRepository();

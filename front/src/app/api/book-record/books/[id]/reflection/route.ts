@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ReflectionInput } from "@/lib/types";
+import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,
   PrismaBookRecordRepository,
@@ -41,6 +42,7 @@ type Params = {
 
 export async function POST(request: NextRequest, context: Params) {
   try {
+    await requireAuthenticatedUser(request);
     const { id } = await context.params;
     const body = await request.json();
     const input = parseReflectionInput(body);
@@ -52,6 +54,10 @@ export async function POST(request: NextRequest, context: Params) {
     const book = await repository.saveReflection(id, input);
     return NextResponse.json({ book });
   } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
     if (isRepositoryError(error)) {
       return errorResponse(error.message, error.statusCode);
     }

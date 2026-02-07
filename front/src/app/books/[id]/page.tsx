@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { reflectionIsMissing } from "@/lib/helpers";
 import { repository } from "@/lib/repository-instance";
 import { Book, BookStatus, ProgressLog } from "@/lib/types";
+import { useAuthSession } from "@/lib/use-auth-session";
 import { validateProgressForm, ValidationErrors } from "@/lib/validation";
 
 const toProgressRate = (book: Book): number => {
@@ -20,6 +22,7 @@ const toProgressRate = (book: Book): number => {
 export default function BookDetailPage() {
   const params = useParams<{ id: string }>();
   const bookId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const { authRequired, loading: authLoading, isAuthenticated, configError } = useAuthSession();
 
   const [book, setBook] = useState<Book | null>(null);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
@@ -52,6 +55,10 @@ export default function BookDetailPage() {
   }, [book, page, status]);
 
   const load = async () => {
+    if (authRequired && (authLoading || !isAuthenticated)) {
+      return;
+    }
+
     if (!bookId) {
       return;
     }
@@ -84,12 +91,16 @@ export default function BookDetailPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId]);
+  }, [authLoading, authRequired, bookId, isAuthenticated]);
 
   const handleSaveProgress = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!book) {
+      return;
+    }
+
+    if (authRequired && !isAuthenticated) {
       return;
     }
 
@@ -140,6 +151,10 @@ export default function BookDetailPage() {
       return;
     }
 
+    if (authRequired && !isAuthenticated) {
+      return;
+    }
+
     setErrorMessage("");
     setSaveMessage("");
 
@@ -156,6 +171,23 @@ export default function BookDetailPage() {
       setErrorMessage(error instanceof Error ? error.message : "再読開始に失敗しました。");
     }
   };
+
+  if (authRequired && !authLoading && !isAuthenticated) {
+    return (
+      <OrganicShell
+        title="書籍詳細"
+        subtitle="進捗記録と完読メモ"
+        contentTestId="book-detail-page"
+        action={
+          <Link href="/" className="btn-secondary inline-flex px-4 py-2 text-sm">
+            ダッシュボードへ戻る
+          </Link>
+        }
+      >
+        <AuthRequiredPanel nextPath={bookId ? `/books/${bookId}` : "/"} configError={configError} />
+      </OrganicShell>
+    );
+  }
 
   if (!isLoaded) {
     return (

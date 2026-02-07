@@ -59,6 +59,119 @@ body {
   box-shadow: 0 14px 30px rgba(61, 64, 91, 0.07);
 }
 
+.section-tone-not-started {
+  border-color: rgba(184, 124, 62, 0.45);
+  background: linear-gradient(180deg, #ffefdc 0%, #fff7ed 100%);
+}
+
+.section-tone-reading {
+  border-color: rgba(63, 148, 108, 0.44);
+  background: linear-gradient(180deg, #e7f8ee 0%, #f3fcf8 100%);
+}
+
+.section-tone-paused {
+  border-color: rgba(99, 109, 163, 0.44);
+  background: linear-gradient(180deg, #eceffd 0%, #f5f7ff 100%);
+}
+
+.section-tone-completed {
+  border-color: rgba(66, 123, 183, 0.44);
+  background: linear-gradient(180deg, #e7f3ff 0%, #f2f8ff 100%);
+}
+
+.section-tone-pending-reflection {
+  border-color: rgba(190, 128, 34, 0.46);
+  background: linear-gradient(180deg, #ffefd1 0%, #fff7e8 100%);
+}
+
+.section-dot-not-started {
+  background: #b9783d;
+}
+
+.section-dot-reading {
+  background: #308c62;
+}
+
+.section-dot-paused {
+  background: #5b65a1;
+}
+
+.section-dot-completed {
+  background: #397bb7;
+}
+
+.section-dot-pending-reflection {
+  background: #b87423;
+}
+
+.stats-kpi-books {
+  border-color: rgba(184, 124, 62, 0.45);
+  background: linear-gradient(180deg, #ffefdc 0%, #fff7ed 100%);
+}
+
+.stats-kpi-completed {
+  border-color: rgba(66, 123, 183, 0.44);
+  background: linear-gradient(180deg, #e7f3ff 0%, #f2f8ff 100%);
+}
+
+.stats-kpi-progress {
+  border-color: rgba(63, 148, 108, 0.44);
+  background: linear-gradient(180deg, #e7f8ee 0%, #f3fcf8 100%);
+}
+
+.stats-kpi-pages {
+  border-color: rgba(190, 128, 34, 0.46);
+  background: linear-gradient(180deg, #ffefd1 0%, #fff7e8 100%);
+}
+
+.status-bar-not-started {
+  background: #b9783d;
+}
+
+.status-bar-reading {
+  background: #308c62;
+}
+
+.status-bar-paused {
+  background: #5b65a1;
+}
+
+.status-bar-completed {
+  background: #397bb7;
+}
+
+.stats-status-dot-not-started {
+  background: #b88f66;
+}
+
+.stats-status-dot-reading {
+  background: #5c9f81;
+}
+
+.stats-status-dot-paused {
+  background: #8e97b2;
+}
+
+.stats-status-dot-completed {
+  background: #6d97b8;
+}
+
+.stats-status-bar-not-started {
+  background: #c9a984;
+}
+
+.stats-status-bar-reading {
+  background: #74ae92;
+}
+
+.stats-status-bar-paused {
+  background: #99a3bd;
+}
+
+.stats-status-bar-completed {
+  background: #80a9c8;
+}
+
 .panel-subtle {
   border: 1px solid rgba(61, 64, 91, 0.1);
   border-radius: 1.2rem;

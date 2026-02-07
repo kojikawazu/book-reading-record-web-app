@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ReactNode, useMemo, useState } from "react";
+import { useAuthSession } from "@/lib/use-auth-session";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS: Array<{ href: string; label: string }> = [
   { href: "/", label: "ホーム" },
@@ -35,6 +37,27 @@ export const OrganicShell = ({
   children,
 }: OrganicShellProps) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const { authRequired, isAuthenticated } = useAuthSession();
+
+  const loginHref = useMemo(() => {
+    const nextPath = pathname || "/";
+    return `/auth/login?next=${encodeURIComponent(nextPath)}`;
+  }, [pathname]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+      router.replace(loginHref);
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden bg-[color:var(--background)] text-[color:var(--foreground)]">
@@ -76,7 +99,7 @@ export const OrganicShell = ({
         </nav>
 
         <div className="mt-7 rounded-[28px] border border-[color:var(--border)] bg-white/70 p-4 text-xs text-[color:var(--foreground)]/72">
-          <p>localStorage / Playwright E2E</p>
+          <p>{authRequired ? "Supabase Auth / Google OAuth" : "localStorage / Playwright E2E"}</p>
         </div>
       </aside>
 
@@ -106,6 +129,21 @@ export const OrganicShell = ({
 
             <div className="flex items-center gap-3 md:gap-5">
               {action && <div className="flex items-center gap-2">{action}</div>}
+              {authRequired &&
+                (isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                    className="btn-secondary px-3 py-2 text-xs disabled:opacity-60"
+                  >
+                    {signingOut ? "ログアウト中..." : "ログアウト"}
+                  </button>
+                ) : (
+                  <Link href={loginHref} className="btn-primary px-3 py-2 text-xs">
+                    ログイン
+                  </Link>
+                ))}
               <button
                 type="button"
                 className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-[color:var(--background)]"
@@ -116,13 +154,15 @@ export const OrganicShell = ({
               <div className="hidden h-8 w-px bg-[color:var(--foreground)]/12 md:block" />
               <div className="hidden items-center gap-3 md:flex">
                 <div className="text-right">
-                  <p className="text-xs font-bold leading-none">Single User</p>
+                  <p className="max-w-[220px] truncate text-xs font-bold leading-none">
+                    {authRequired ? "Manager" : "Single User"}
+                  </p>
                   <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--foreground)]/45">
-                    MVP
+                    {authRequired ? "Supabase Auth" : "MVP"}
                   </p>
                 </div>
                 <div className="flex h-11 w-11 items-center justify-center rounded-[20px] bg-[color:var(--background-soft)] text-xs font-bold">
-                  KU
+                  {authRequired ? "M" : "KU"}
                 </div>
               </div>
             </div>

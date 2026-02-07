@@ -24,12 +24,25 @@ cp .env.example .env.local
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（任意、利用時のみ）
 - `NEXT_PUBLIC_REPOSITORY_DRIVER`（`supabase` or `local`）
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`（サーバー用途のみ）
 
 実値は `.env.local` に設定し、`.env.example` は共有テンプレートとして管理します。
+`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリでは使用しません（Supabase Authプロジェクト側で管理）。
+
+## Supabase Auth（Google OAuth）設定
+
+1. Supabase Authプロジェクト側で `Auth > Providers > Google` が有効化済みであることを確認する
+2. `Auth > URL Configuration` で Redirect URL に以下を追加する
+   - `http://localhost:3000/auth/login`
+   - 本番URLを使う場合は同様に `/auth/login` を追加する
+3. `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` で起動し、`/auth/login` からログインする
+4. 認可ポリシー
+   - 閲覧系（`/` と `/stats`）は未ログインでも閲覧可能
+   - 更新系（書籍登録・進捗記録・感想保存・再読）はログイン必須
 
 ## Supabase + Prisma運用（チームルール）
 
@@ -58,6 +71,7 @@ cp .env.example .env.local
 ## Routes
 
 - `/`: ダッシュボード
+- `/auth/login`: Googleログイン
 - `/books/new`: 書籍登録
 - `/books/[id]`: 書籍詳細・進捗記録
 - `/stats`: 統計レポート
