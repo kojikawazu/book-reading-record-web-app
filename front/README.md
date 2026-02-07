@@ -68,6 +68,11 @@ cp .env.example .env.local
 - `pnpm test:e2e:ui`: Playwright UIモード
 - `pnpm test:e2e:headed`: Headed実行
 
+## Vercel Build Skip Rule
+
+- `front/vercel.json` の `ignoreCommand` で、`docs/` のみ変更されたコミットはVercelビルドをスキップする
+- `front/` 配下やその他ファイルの変更がある場合は通常どおりビルドする
+
 ## Routes
 
 - `/`: ダッシュボード
