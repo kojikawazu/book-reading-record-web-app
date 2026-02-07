@@ -11,12 +11,16 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "prisma:generate": "node scripts/prisma-with-env-local.mjs generate",
+    "prisma:pull": "node scripts/prisma-with-env-local.mjs db pull",
+    "prisma:validate": "node scripts/prisma-with-env-local.mjs validate",
     "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test",
     "test:e2e:ui": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test --ui",
     "test:e2e:headed": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test --headed",
     "test:e2e:install": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright install chromium"
   },
   "dependencies": {
+    "@prisma/client": "^6.16.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -32,6 +36,7 @@
     "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
+    "prisma": "^6.16.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
