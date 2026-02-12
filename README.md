@@ -42,6 +42,7 @@ pnpm test:e2e
 
 ## Notes
 
-- Phase 1 のデータ保存先は `localStorage`（キー: `book-reading-record.v1`）
+- データ保存先は `NEXT_PUBLIC_REPOSITORY_DRIVER` で切り替える（`supabase` / `local`）
+- 通常運用は `supabase`、E2E受け入れは `local` を使用する
 - E2E は Playwright（Chromium）
 - 仕様優先順位は `docs/04.e2e-cases.md > docs/03.requirements.md > docs/02.ui-layout.md`
