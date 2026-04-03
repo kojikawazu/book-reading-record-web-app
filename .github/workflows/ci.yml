@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: front/pnpm-lock.yaml
 
@@ -57,3 +57,4 @@ jobs:
           name: playwright-report
           path: front/playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
