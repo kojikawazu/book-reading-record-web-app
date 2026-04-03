@@ -25,7 +25,7 @@ type SeedBook = {
 type SeedPayload = {
   version: number;
   books: SeedBook[];
-  progressLogs: { id: string; bookId: string; page: number; status: string; loggedAt: string }[];
+  progressLogs: { id: string; bookId: string; page: number; status: "not_started" | "reading" | "paused" | "completed"; loggedAt: string }[];
 };
 
 const isoDaysAgo = (days: number): string => {
