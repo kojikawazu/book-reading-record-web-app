@@ -709,7 +709,9 @@ test("Case 5b: reflection なし完読書籍を再読できる", async ({ page }
 
   await seedStorage(page, payload);
   await page.goto("/");
-  await page.getByRole("link", { name: /Book5b/ }).click();
+  // reflection なし完読書籍は section-completed と section-pending-reflection の両方に出るため
+  // section-completed 内のリンクを明示的に指定する
+  await page.getByTestId("section-completed").getByRole("link", { name: /Book5b/ }).click();
   await page.getByTestId("reread-button").click();
 
   await page.getByRole("link", { name: "ダッシュボードへ戻る" }).first().click();
@@ -742,7 +744,7 @@ test("Case 5c: 再読後に currentPage が 0 にリセットされる", async (
 
   await seedStorage(page, payload);
   await page.goto("/");
-  await page.getByRole("link", { name: /Book5c/ }).click();
+  await page.getByTestId("section-completed").getByRole("link", { name: /Book5c/ }).click();
   await page.getByTestId("reread-button").click();
 
   const stored = await page.evaluate((key) => {
@@ -1046,5 +1048,6 @@ test("Case 18c: 書籍ゼロ状態でも stats ページがクラッシュしな
   await page.goto("/stats");
 
   await expect(page.getByTestId("stats-page")).toBeVisible();
-  await expect(page.getByText("0%")).toBeVisible();
+  // 完読率 KPI の 0% を特定（stats-kpi-completed article 内の数値）
+  await expect(page.locator("article.stats-kpi-completed").getByText("0%")).toBeVisible();
 });
