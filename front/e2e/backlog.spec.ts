@@ -3,6 +3,12 @@
  *
  * 各機能が未実装のため全ケース test.skip でマーク。
  * 機能実装（Issue #9〜#12）完了後に test.skip → test に変更して有効化する。
+ *
+ * カバレッジ:
+ *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1
+ *   B2: 書籍イメージ（Issue #10）→ UI・外部URL表示が絡むため、Issue #10 実装時に別途追加する
+ *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1
+ *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3
  */
 import { expect, test, type Page } from "@playwright/test";
 

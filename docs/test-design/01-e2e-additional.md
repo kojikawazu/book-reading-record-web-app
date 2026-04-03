@@ -153,6 +153,11 @@
 - 実装未完のケースは `test.skip(...)` でマーク
 - 機能完了時に `test.skip` → `test` に変更するだけで有効化
 
+## 既知の制約・今後の改善
+
+- **Case 18b/18c が CSS クラス依存**: `article.stats-kpi-books` / `article.stats-kpi-completed` はスタイル変更で壊れるリスクがある。`stats/page.tsx` の `<article>` 要素に `data-testid="kpi-books"` / `data-testid="kpi-completed"` を追加することで安定化できる（現時点では対応不要）
+- **B2（書影表示 / Issue #10）のE2Eは未定義**: 画像URL・フォールバック表示の検証は UI実装が確定してから `backlog.spec.ts` に追加する
+
 ## モック方針
 
 - **外部API モック**: 不要（`local` モードは localStorage のみ使用）
