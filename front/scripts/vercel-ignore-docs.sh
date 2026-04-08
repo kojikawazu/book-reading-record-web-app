@@ -18,14 +18,12 @@ fi
 
 for path in $CHANGED_FILES; do
   case "$path" in
-    docs/*)
-      ;;
-    *)
-      echo "Non-docs change detected: $path. Continue build."
+    front/*)
+      echo "front/ change detected: $path. Continue build."
       exit 1
       ;;
   esac
 done
 
-echo "Only docs/ changes detected. Skip build."
+echo "No front/ changes detected. Skip build."
 exit 0
