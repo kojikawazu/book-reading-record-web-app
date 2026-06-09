@@ -17,7 +17,8 @@
     "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test",
     "test:e2e:ui": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test --ui",
     "test:e2e:headed": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright test --headed",
-    "test:e2e:install": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright install chromium"
+    "test:e2e:install": "PLAYWRIGHT_BROWSERS_PATH=.playwright playwright install chromium",
+    "screenshots": "PLAYWRIGHT_BROWSERS_PATH=.playwright node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
