@@ -14,3 +14,21 @@
 | documentation.md | 全体 | ドキュメント更新ルール |
 | git.md | 全体 | GitHub Flow・ブランチ命名・push 禁止物 |
 | testing.md | 全体 | テスト分類・原則 |
+
+## Docs
+
+仕様書は `docs/` 配下に番号付き（`01`〜`11`）で管理する。
+
+| # | ファイル | 内容 |
+|---|---------|------|
+| 01 | business-requirements | 要求仕様（背景・スコープ・制約） |
+| 02 | requirements-specification | 要件仕様（機能要件・優先度） |
+| 03 | functional-specification | 機能仕様（UI/UX・業務ルール） |
+| 04 | non-functional-specification | 非機能仕様 |
+| 05 | data-specification | データ仕様 |
+| 06 | security-specification | セキュリティ仕様（認証・RLS・検証） |
+| 07 | api-specification | API/Repository 仕様 |
+| 08 | test-specification | テスト仕様（受け入れE2E含む） |
+| 09 | architecture-specification | アーキテクチャ仕様 |
+| 10 | miscellaneous-specification | その他（用語集・参照） |
+| 11 | tasks | タスク・体制・進行フロー |

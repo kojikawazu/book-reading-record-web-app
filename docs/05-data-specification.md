@@ -1,4 +1,6 @@
-# Data And Storage Specification
+# データ仕様書（Data Specification）
+
+読書記録アプリのデータ構造と永続化仕様（`supabase` / `local`）を定義する。
 
 ## 1. 目的
 - 読書記録アプリのデータ構造と永続化仕様（`supabase` / `local`）を定義する
@@ -43,6 +45,49 @@
 - `books: Book[]`
 - `progressLogs: ProgressLog[]`
 
+### 2.5 ER 図（論理モデル）
+
+```mermaid
+erDiagram
+    BookRecordBook ||--o{ BookRecordProgressLog : "has"
+    BookRecordBook ||--o| BookRecordReflection : "has"
+
+    BookRecordBook {
+        uuid id PK
+        string title
+        string author
+        string genre "nullable"
+        enum format "paper|ebook|audio"
+        int totalPages
+        int currentPage "default 0"
+        string tags "String[]"
+        enum status "not_started|reading|paused|completed"
+        datetime createdAt
+        datetime updatedAt
+        datetime completedAt "nullable"
+    }
+    BookRecordProgressLog {
+        uuid id PK
+        uuid bookId FK
+        int page
+        string memo "nullable"
+        enum status
+        datetime loggedAt
+    }
+    BookRecordReflection {
+        uuid id PK
+        uuid bookId FK "unique"
+        string learning
+        string action
+        string quote
+        datetime createdAt
+        datetime updatedAt
+    }
+```
+
+- `local` モードでは上記を `Book` / `ProgressLog` / `Reflection`（`reflection` は `Book` に埋め込み）として保持する。
+- `supabase` モードの物理テーブルは §7 を参照。
+
 ## 3. データ使用方針
 - 扱うデータ: 書籍情報、進捗記録、感想
 - 画面は `BookRepository` を通じてデータへアクセスする
@@ -82,6 +127,14 @@
   - バックアップ退避
   - 初期値で再初期化
 
-## 7. 拡張方針
+## 7. DBスキーマ（`supabase` モード）
+- Prisma スキーマ定義は `front/prisma/schema.prisma` を正とする。
+- 物理テーブル名は `BookRecord` 接頭辞を付与する。
+  - `BookRecordBooks`（model `BookRecordBook`）
+  - `BookRecordProgressLogs`（model `BookRecordProgressLog`）
+  - `BookRecordReflections`（model `BookRecordReflection`）
+- スキーマ同期フロー（`db pull` 運用）は `docs/09-architecture-specification.md` を参照する。
+
+## 8. 拡張方針
 - `supabase` / `local` のどちらでも `Book` / `ProgressLog` / `Reflection` の論理モデルは維持する
 - 既存ローカルデータのインポートは別タスクで設計する
