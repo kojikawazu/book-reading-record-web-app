@@ -5,6 +5,13 @@
 - 認証方式・RLS の詳細は `docs/06-security-specification.md` を参照する。
 - アーキテクチャ・環境変数・Prisma 同期フローは `docs/09-architecture-specification.md` を参照する。
 
+## 目次
+
+- [1. 目的](#1-目的)
+- [2. 必須 Repository インターフェース](#2-必須-repository-インターフェース)
+- [3. エラー契約](#3-エラー契約)
+- [4. HTTP エンドポイント（`supabase` モード）](#4-http-エンドポイントsupabase-モード)
+
 ## 1. 目的
 - `supabase` / `local` の両モードで共通利用するデータアクセス契約を定義する
 
