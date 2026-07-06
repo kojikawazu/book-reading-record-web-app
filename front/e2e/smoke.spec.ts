@@ -45,7 +45,10 @@ test("SM-4: 主要ページでコンソールエラーが出ない", async ({ pa
 test("SM-5: 存在しない書籍 ID にアクセスしてもクラッシュしない", async ({ page }) => {
   await page.goto("/books/nonexistent-id-00000000");
   // トップへリダイレクトされるか、エラー UI が表示されるかのどちらか
-  const isDashboard = await page.getByTestId("dashboard-page").isVisible().catch(() => false);
+  const isDashboard = await page
+    .getByTestId("dashboard-page")
+    .isVisible()
+    .catch(() => false);
   const hasErrorUi = await page
     .getByText(/見つかりません|not found|エラー/i)
     .isVisible()

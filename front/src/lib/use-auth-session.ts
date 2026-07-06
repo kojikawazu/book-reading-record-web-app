@@ -5,14 +5,24 @@ import { useEffect, useMemo, useState } from "react";
 import { repositoryDriver } from "./repository-instance";
 import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "./supabase/client";
 
+/** useAuthSession が返す認証状態。 */
 type AuthSessionState = {
+  /** `supabase` モードで認証が必要かどうか。 */
   authRequired: boolean;
+  /** セッション確認中かどうか（`local` モードや設定不足時は常に false）。 */
   loading: boolean;
   session: Session | null;
   isAuthenticated: boolean;
+  /** Supabase Auth の環境変数不足など、設定起因のエラー文言。 */
   configError: string | null;
 };
 
+/**
+ * Supabase セッションを購読し、画面の認証ガードに必要な状態を返すフック。
+ * `local` モード（認証不要）や環境変数不足時は購読せず、非ログイン扱いの安全な既定値を返す。
+ *
+ * @returns 認証要否・ローディング・セッション・ログイン有無・設定エラーをまとめた状態
+ */
 export const useAuthSession = (): AuthSessionState => {
   const authRequired = repositoryDriver === "supabase";
   const authConfigured = isSupabaseAuthConfigured;

@@ -11,6 +11,12 @@ const repository = new PrismaBookRecordRepository();
 const BOOK_STATUS_VALUES = ["not_started", "reading", "paused"] as const;
 const BOOK_FORMAT_VALUES = ["paper", "ebook", "audio"] as const;
 
+/**
+ * リクエストボディを CreateBookInput へ検証・変換する。型・必須・列挙値のいずれかが不正なら null。
+ *
+ * @param body - JSON パース済みのリクエストボディ
+ * @returns 妥当な入力、または不正時は null
+ */
 const parseCreateBookInput = (body: unknown): CreateBookInput | null => {
   if (!body || typeof body !== "object") {
     return null;
@@ -51,6 +57,11 @@ const errorResponse = (message: string, status: number): NextResponse => {
   return NextResponse.json({ message }, { status });
 };
 
+/**
+ * GET /api/book-record/books — 書籍一覧を取得する（未認証可）。
+ *
+ * @returns 書籍一覧 JSON、またはエラー時のエラーレスポンス
+ */
 export async function GET() {
   try {
     const books = await repository.listBooks();
@@ -68,6 +79,12 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/book-record/books — 書籍を作成する（Bearer 認証必須）。
+ *
+ * @param request - 受信リクエスト（Authorization ヘッダと書籍作成ボディ）
+ * @returns 作成した書籍 JSON（201）、またはエラー時のエラーレスポンス
+ */
 export async function POST(request: NextRequest) {
   try {
     await requireAuthenticatedUser(request);

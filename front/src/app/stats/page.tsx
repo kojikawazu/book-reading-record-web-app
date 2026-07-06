@@ -7,6 +7,12 @@ import { computeWeeklySummary } from "@/lib/helpers";
 import { repository } from "@/lib/repository-instance";
 import { Book, BookStatus, ProgressLog } from "@/lib/types";
 
+/**
+ * 比率（0〜1）をパーセント（小数第1位四捨五入）へ変換する。
+ *
+ * @param value - 0〜1 の比率
+ * @returns パーセント値
+ */
 const toPercent = (value: number): number => Math.round(value * 1000) / 10;
 
 const STATUS_BAR_CLASS: Record<BookStatus, string> = {
@@ -23,6 +29,10 @@ const STATUS_DOT_CLASS: Record<BookStatus, string> = {
   completed: "stats-status-dot-completed",
 };
 
+/**
+ * 統計レポートページ（`/stats`）。登録書籍数・完読率・ステータス/読書形式分布・週次指標を表示する。
+ * 現在のドライバー（`local` / `supabase`）から取得したデータを集計する（未認証でも閲覧可）。
+ */
 export default function StatsPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
@@ -122,7 +132,9 @@ export default function StatsPage() {
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[color:var(--foreground)]/45">
                 登録書籍数
               </p>
-              <p className="mt-2 text-4xl font-bold text-[color:var(--foreground)]">{books.length}</p>
+              <p className="mt-2 text-4xl font-bold text-[color:var(--foreground)]">
+                {books.length}
+              </p>
             </article>
 
             <article className="panel-soft stats-kpi-completed p-5">

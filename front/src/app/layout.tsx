@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "単一ユーザー向けの読書記録MVP",
 };
 
+/** 全ページ共通のルートレイアウト。`<html lang="ja">` と body を提供する。 */
 export default function RootLayout({
   children,
 }: Readonly<{

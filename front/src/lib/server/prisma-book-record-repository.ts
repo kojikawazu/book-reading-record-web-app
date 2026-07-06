@@ -39,6 +39,7 @@ const firstValidationMessage = (errors: Record<string, string>): string => {
   return Object.values(errors)[0] ?? "入力内容が不正です。";
 };
 
+// Prisma の Reflection 行をドメインの Reflection へ変換する（日時は ISO 文字列化）。
 const toReflection = (row: BookRecordReflection | null): Reflection | undefined => {
   if (!row) {
     return undefined;
@@ -52,6 +53,7 @@ const toReflection = (row: BookRecordReflection | null): Reflection | undefined 
   };
 };
 
+// Prisma の Book 行（reflection を include したもの）をドメインの Book へ変換する。
 const toBook = (
   row: BookRecordBook & {
     reflection: BookRecordReflection | null;
@@ -74,6 +76,7 @@ const toBook = (
   };
 };
 
+// Prisma の ProgressLog 行をドメインの ProgressLog へ変換する。
 const toProgressLog = (row: BookRecordProgressLog): ProgressLog => {
   return {
     id: row.id,
@@ -96,6 +99,14 @@ type BookDraft = {
   status: BookStatus;
 };
 
+/**
+ * 書籍ドラフトをサーバー側で検証する（クライアント検証を信用せず二重に守る）。
+ *
+ * @param input - 検証対象のドラフト
+ * @param options - 検証オプション
+ * @param options.allowCompletedStatus - false で初期ステータスの completed を禁止する
+ * @returns フィールド別エラー（問題なければ空オブジェクト）
+ */
 const validateBookDraft = (
   input: BookDraft,
   options: {
@@ -170,6 +181,13 @@ const validateProgressDraft = (input: {
   return errors;
 };
 
+/**
+ * 記録日時文字列を Date へ変換する。未指定なら現在時刻、パース不能なら検証エラーにする。
+ *
+ * @param loggedAt - ISO 日時文字列または undefined
+ * @returns 変換した Date
+ * @throws {RepositoryValidationError} 日時としてパースできない場合
+ */
 const parseLoggedAt = (loggedAt: string | undefined): Date => {
   if (!loggedAt) {
     return new Date();
@@ -183,23 +201,33 @@ const parseLoggedAt = (loggedAt: string | undefined): Date => {
   return parsed;
 };
 
+/** 入力検証違反（HTTP 400 相当）。 */
 export class RepositoryValidationError extends Error {
   readonly statusCode = 400;
 }
 
+/** 対象データ未検出（HTTP 404 相当）。 */
 export class RepositoryNotFoundError extends Error {
   readonly statusCode = 404;
 }
 
+/**
+ * 値が Repository 由来のエラー（400/404）かどうかを判定する型ガード。
+ * Route Handler が statusCode をそのまま HTTP ステータスへ写すために使う。
+ *
+ * @param value - 判定対象の値
+ * @returns Repository エラーなら true
+ */
 export const isRepositoryError = (
   value: unknown
 ): value is RepositoryValidationError | RepositoryNotFoundError => {
-  return (
-    value instanceof RepositoryValidationError ||
-    value instanceof RepositoryNotFoundError
-  );
+  return value instanceof RepositoryValidationError || value instanceof RepositoryNotFoundError;
 };
 
+/**
+ * Supabase PostgreSQL を Prisma で操作する BookRepository 実装（`supabase` モードのサーバー側）。
+ * 並び順・完読判定・感想の上書きなどの業務ルールは LocalStorageRepository と論理的に一致させる。
+ */
 export class PrismaBookRecordRepository implements BookRepository {
   async listBooks(): Promise<Book[]> {
     const books = await prisma.bookRecordBook.findMany({
@@ -271,6 +299,16 @@ export class PrismaBookRecordRepository implements BookRepository {
     return toBook(created);
   }
 
+  /**
+   * 書籍を部分更新する。完読条件を満たせば completed を強制し、感想が渡された場合のみ
+   * Reflection を upsert する。感想更新後は最新の reflection を含めて返すため再取得する。
+   *
+   * @param bookId - 対象書籍の ID
+   * @param patch - 更新するフィールド（reflection を含みうる）
+   * @returns 更新後の書籍
+   * @throws {RepositoryNotFoundError} 書籍が存在しない場合
+   * @throws {RepositoryValidationError} 入力不正・完読条件未達で completed の場合
+   */
   async updateBook(bookId: string, patch: UpdateBookInput): Promise<Book> {
     const source = await prisma.bookRecordBook.findUnique({
       where: { id: bookId },
@@ -305,9 +343,7 @@ export class PrismaBookRecordRepository implements BookRepository {
     }
 
     if (status === "completed" && merged.currentPage < merged.totalPages) {
-      throw new RepositoryValidationError(
-        "完読にするには到達ページを総ページ以上にしてください。"
-      );
+      throw new RepositoryValidationError("完読にするには到達ページを総ページ以上にしてください。");
     }
 
     const updated = await prisma.bookRecordBook.update({
@@ -321,7 +357,7 @@ export class PrismaBookRecordRepository implements BookRepository {
         currentPage: merged.currentPage,
         tags: merged.tags,
         status: status as BookRecordBook["status"],
-        completedAt: status === "completed" ? source.completedAt ?? new Date() : null,
+        completedAt: status === "completed" ? (source.completedAt ?? new Date()) : null,
       },
       include: {
         reflection: true,
@@ -353,6 +389,7 @@ export class PrismaBookRecordRepository implements BookRepository {
       });
     }
 
+    // 感想を更新していないなら upsert 前の結果で足りる。更新した場合のみ再取得して整合させる。
     if (!patch.reflection) {
       return toBook(updated);
     }
@@ -402,14 +439,13 @@ export class PrismaBookRecordRepository implements BookRepository {
     }
 
     if (status === "completed" && input.page < source.totalPages) {
-      throw new RepositoryValidationError(
-        "完読にするには到達ページを総ページ以上にしてください。"
-      );
+      throw new RepositoryValidationError("完読にするには到達ページを総ページ以上にしてください。");
     }
 
     const loggedAt = parseLoggedAt(input.loggedAt);
-    const completedAt = status === "completed" ? source.completedAt ?? loggedAt : null;
+    const completedAt = status === "completed" ? (source.completedAt ?? loggedAt) : null;
 
+    // 書籍更新と進捗ログ追加は 1 トランザクションで確定し、片方だけ反映される不整合を防ぐ。
     const [book, log] = await prisma.$transaction([
       prisma.bookRecordBook.update({
         where: { id: bookId },
@@ -466,6 +502,7 @@ export class PrismaBookRecordRepository implements BookRepository {
           learning: input.learning,
           action: input.action,
           quote: input.quote,
+          // 初回作成時のみ採番し、上書き時は元の作成日時を維持する。
           createdAt: source.reflection?.createdAt ?? new Date(),
         },
         update: {

@@ -11,6 +11,13 @@ const repository = new PrismaBookRecordRepository();
 const BOOK_STATUS_VALUES = ["not_started", "reading", "paused", "completed"] as const;
 const BOOK_FORMAT_VALUES = ["paper", "ebook", "audio"] as const;
 
+/**
+ * リクエストボディを UpdateBookInput へ変換する。送られてきた妥当なフィールドのみ採用する
+ * 部分更新用パーサ（フィールド欠落は無視するため、必ず非 null のパッチを返す）。
+ *
+ * @param body - JSON パース済みのリクエストボディ
+ * @returns 採用したフィールドのみを含むパッチ、またはボディが非オブジェクトなら null
+ */
 const parseUpdateBookInput = (body: unknown): UpdateBookInput | null => {
   if (!body || typeof body !== "object") {
     return null;
@@ -74,6 +81,13 @@ type Params = {
   }>;
 };
 
+/**
+ * GET /api/book-record/books/[id] — 書籍を1冊取得する（未認証可）。
+ *
+ * @param _request - 受信リクエスト（未使用）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 書籍 JSON、未検出は 404、その他はエラーレスポンス
+ */
 export async function GET(_request: NextRequest, context: Params) {
   try {
     const { id } = await context.params;
@@ -97,6 +111,13 @@ export async function GET(_request: NextRequest, context: Params) {
   }
 }
 
+/**
+ * PATCH /api/book-record/books/[id] — 書籍を更新する（再読含む・Bearer 認証必須）。
+ *
+ * @param request - 受信リクエスト（Authorization ヘッダと更新パッチ）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 更新後の書籍 JSON、またはエラー時のエラーレスポンス
+ */
 export async function PATCH(request: NextRequest, context: Params) {
   try {
     await requireAuthenticatedUser(request);

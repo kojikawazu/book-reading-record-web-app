@@ -12,6 +12,10 @@ import { BookFormat, BookStatus } from "@/lib/types";
 import { useAuthSession } from "@/lib/use-auth-session";
 import { normalizeTags, validateBookForm, ValidationErrors } from "@/lib/validation";
 
+/**
+ * 書籍登録ページ（`/books/new`）。必須項目を検証して作成し、成功時はダッシュボードへ戻る。
+ * `supabase` モードでは認証必須（未ログイン時はログイン導線を表示）。
+ */
 export default function NewBookPage() {
   const router = useRouter();
   const { authRequired, loading: authLoading, isAuthenticated, configError } = useAuthSession();

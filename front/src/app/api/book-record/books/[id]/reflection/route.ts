@@ -8,6 +8,12 @@ import {
 
 const repository = new PrismaBookRecordRepository();
 
+/**
+ * リクエストボディを ReflectionInput へ検証・変換する。learning/action/quote が文字列でなければ null。
+ *
+ * @param body - JSON パース済みのリクエストボディ
+ * @returns 妥当な入力、または不正時は null
+ */
 const parseReflectionInput = (body: unknown): ReflectionInput | null => {
   if (!body || typeof body !== "object") {
     return null;
@@ -40,6 +46,13 @@ type Params = {
   }>;
 };
 
+/**
+ * POST /api/book-record/books/[id]/reflection — 完読時感想を保存する（Bearer 認証必須）。
+ *
+ * @param request - 受信リクエスト（Authorization ヘッダと感想ボディ）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 更新後の書籍 JSON、またはエラー時のエラーレスポンス
+ */
 export async function POST(request: NextRequest, context: Params) {
   try {
     await requireAuthenticatedUser(request);

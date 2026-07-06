@@ -13,6 +13,12 @@ import { Book, BookStatus, ProgressLog } from "@/lib/types";
 import { useAuthSession } from "@/lib/use-auth-session";
 import { validateProgressForm, ValidationErrors } from "@/lib/validation";
 
+/**
+ * 進捗率（%・小数第1位四捨五入）を求める。総ページが 0 以下なら 0 を返す。
+ *
+ * @param book - 対象書籍
+ * @returns 0〜100 の進捗率
+ */
 const toProgressRate = (book: Book): number => {
   if (book.totalPages <= 0) {
     return 0;
@@ -20,6 +26,10 @@ const toProgressRate = (book: Book): number => {
   return Math.round((book.currentPage / book.totalPages) * 1000) / 10;
 };
 
+/**
+ * 書籍詳細・進捗記録ページ（`/books/[id]`）。進捗記録・完読時感想・再読を扱う。
+ * 完読条件を満たすと感想フォームを表示し、完読保存時に感想も保存する。
+ */
 export default function BookDetailPage() {
   const params = useParams<{ id: string }>();
   const bookId = Array.isArray(params.id) ? params.id[0] : params.id;
