@@ -13,6 +13,12 @@ globs: "front/prisma/**,front/src/lib/server/**"
 - 実行コマンド: `cd front && pnpm prisma:pull`。pull 前後で `pnpm prisma:validate` / `pnpm prisma:generate` を実行する。
 - テーブル定義の反映（push）は別プロジェクト側で実施する。反映完了後、このリポジトリで再度 `db pull` して同期する。
 
+### 例外: テストコンテナへの `db push`
+
+- **IT / E2E のテスト用 Postgres コンテナに限り `prisma db push` を許可する**。使い捨てコンテナへ `schema.prisma` を materialize する目的で、共有 Supabase プロジェクトには一切接続しない。
+- 実行は `DATABASE_URL` がテストコンテナを指すときのみ（`docker-compose.test.yml` 経由）。**共有 Supabase への `db push` / `migrate` は引き続き禁止**（禁止の本質は共有 DB を破壊しないこと）。
+- 詳細は `docs/08-test-specification.md`・`.claude/rules/testing.md` を参照。
+
 ## 命名規約
 
 - モデル名: PascalCase・単数形。本プロジェクトは物理テーブルに `BookRecord` 接頭辞を付与する。

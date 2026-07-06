@@ -81,7 +81,8 @@ flowchart TD
 - 反映後の手順
   - このリポジトリで再度 `db pull` を行い、最新定義に同期する
 - 禁止事項（このリポジトリ）
-  - `db push` / `migrate` の直接実行
+  - 共有 Supabase プロジェクトへの `db push` / `migrate` の直接実行
+  - 例外: IT / E2E のテスト用**使い捨て Postgres コンテナ**への `db push` は許可（共有 DB には接続しない。`docs/08-test-specification.md`・`.claude/rules/database.md`）
 
 ## 6. デプロイ / CI
 - デプロイ先は Vercel。

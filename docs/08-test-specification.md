@@ -1,13 +1,19 @@
 # テスト仕様書（Test Specification）
 
-テスト戦略・実行条件・受け入れ E2E ケース・追加 E2E 設計を定義する。
+テスト戦略（UT / IT / E2E の3層）・実行条件・受け入れケースを定義する。
 
-> **優先順位**: 本書 §7 の受け入れ E2E ケース（Case 1-18）を**最優先の受け入れ基準**とする（`docs/02-requirements-specification.md` §4 参照）。
+> **方針変更（2026-07-06）**: 従来の「E2E のみ・単体テスト禁止」を撤回し、**UT（単体）/ IT（結合）/ E2E** の3層構成へ移行する。準正常系・異常系はこの拡充で厚くする。
+
+> **優先順位**: 本書 §7 の受け入れ E2E ケース（Case 1-18）を**最優先の受け入れ基準**とする（`docs/02-requirements-specification.md` §4 参照）。UT / IT はこれを支える下位層として位置づける。
 
 ## 目次
 
 - [1. 目的](#1-目的)
-- [2. テスト対象](#2-テスト対象)
+- [2. テスト戦略（3層）](#2-テスト戦略3層)
+  - [2.1 層構成](#21-層構成)
+  - [2.2 分類方針（正常/準正常/異常）](#22-分類方針正常準正常異常)
+  - [2.3 モック方針](#23-モック方針)
+  - [2.4 DB コンテナ](#24-db-コンテナ)
 - [3. 実行環境](#3-実行環境)
 - [4. 実行前処理](#4-実行前処理)
 - [5. セレクタ方針](#5-セレクタ方針)
@@ -43,21 +49,53 @@
   - [実装優先順位](#実装優先順位)
 
 ## 1. 目的
-- Playwright E2Eの実行条件と運用ルール、受け入れケースを定義する
+- UT / IT / E2E の3層のテスト戦略・実行条件・受け入れケースと、モック / DB コンテナの運用ルールを定義する
 
-## 2. テスト対象
-- E2Eのみ（単体テストは作成しない。`docs/01-business-requirements.md` §6 禁止事項）
-- 詳細ケース（Case 1-18）は本書 §7 を参照
+## 2. テスト戦略（3層）
+
+### 2.1 層構成
+
+| 層 | ツール | 対象 | 実行基盤 | ねらい |
+|---|---|---|---|---|
+| **UT（単体）** | Vitest（jsdom） | 純粋ロジック（`helpers`/`validation`）・`ApiRepository`・`LocalStorageRepository`・`auth-guard`・Route Handler・各 `parse*` | 外部 I/O のみモック | 高速・隔離。準正常/異常系を大量に |
+| **IT（結合）** | Vitest（node・`*.it.test.ts`・直列） | Route Handler + `PrismaBookRecordRepository` → 実 Postgres | DB コンテナ（docker-compose） | Prisma・トランザクション・認可の実挙動 |
+| **E2E / シナリオ** | Playwright（Chromium） | フルアプリの主要フロー | local レーン（高速）+ supabase レーン（DB コンテナ・本番同等） | 受け入れ・回帰 |
+
+- 実行コマンド: `pnpm test`（UT）/ `pnpm test:it`（IT）/ `pnpm test:e2e`（E2E）。すべて `front/` で実行する。
+- E2E は2レーン併存: `local`（`NEXT_PUBLIC_REPOSITORY_DRIVER=local`・現行 Case 1-18／§7）と `supabase`（DB コンテナ・API/Prisma/認証を含む本番同等シナリオ）。
+
+### 2.2 分類方針（正常/準正常/異常）
+
+- 分類定義と比率目安（正常 1 : 準正常+異常 2 以上）は `.claude/rules/testing.md` に従う。
+- **準正常系・異常系を各層で厚くする**（現状は正常系偏重のため）:
+  - **UT**: バリデーション境界値・上限超過・完読不整合、`parse*` の型不正/欠落/列挙外、`ApiRepository` の 401/404/500/JSON 崩れ、`parseStoragePayload` の破損/バージョン不一致
+  - **IT**: 未認証 POST → 401、存在しない id → 404、完読条件未達 → 400、`reflection` upsert 上書き、進捗＋書籍の `$transaction` 原子性
+  - **E2E(supabase)**: 未ログインで更新系がブロックされる → ログイン後成功、API 失敗時の画面ハンドリング
+
+### 2.3 モック方針
+
+- **モックは外部 I/O 境界のみ**（`fetch` / `localStorage` / Supabase クライアント / Prisma）。ビジネスロジック（`validate*` / `computeWeeklySummary` / 並び順 / 完読判定）はモックしない。
+- **UT** は外部 I/O をモックして隔離実行する。**IT / E2E** はモックせず実 Postgres（DB コンテナ）で検証する。
+
+### 2.4 DB コンテナ
+
+- IT・E2E(supabase レーン)は `docker-compose.test.yml` の**使い捨て Postgres** を使う。**共有 Supabase プロジェクトには一切接続しない**。
+- スキーマ投入は**テストコンテナ限定で `prisma db push`**（`.claude/rules/database.md` の例外規定）。`schema.prisma` を単一の真実とする。
+- E2E(supabase レーン)の認証は、本番で無効化される **env ゲート付きテストシーム**で通す（`docs/06-security-specification.md`。素の Postgres は Supabase Auth を持たないため）。
 
 ## 3. 実行環境
-- ブラウザ: Chromium
 - 実行ディレクトリ: `front/`
 - コマンド:
-  - `pnpm test:e2e`
+  - `pnpm test` — UT（Vitest / jsdom）
+  - `pnpm test:it` — IT（Vitest / node）。事前に `docker compose -f docker-compose.test.yml up -d` で Postgres を起動する
+  - `pnpm test:e2e` — E2E（Playwright / Chromium）
 - 実行時設定:
-  - E2Eの受け入れケース（§7）は `local` モード前提で検証するため、PlaywrightのwebServerは `NEXT_PUBLIC_REPOSITORY_DRIVER=local` で起動する
+  - **UT**: 外部 I/O（`fetch` / `localStorage` / Supabase / Prisma）をモックし、DB・ネットワーク非依存で実行する
+  - **IT**: `DATABASE_URL` をテスト用 Postgres コンテナに向け、`globalSetup` で `prisma db push` してスキーマを投入。DB 状態を共有するため直列実行する
+  - **E2E(local レーン)**: §7 の受け入れケースは `NEXT_PUBLIC_REPOSITORY_DRIVER=local` で webServer を起動する
+  - **E2E(supabase レーン)**: `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` + DB コンテナで起動し、認証は env ゲート付きテストシームで通す
 - 合格条件:
-  - 全ケース成功（skipなし）
+  - UT / IT / E2E がすべて成功（未実装機能待ちの `test.skip` を除く）
 
 ## 4. 実行前処理
 - 各テスト開始時に `localStorage` を初期化する
@@ -244,7 +282,7 @@
 - 対象機能: 既存 Case 1〜18 で未カバーのシナリオ全般 + バックログ B1〜B4 対応 E2E
 - 対象ファイル: `front/e2e/book-app.spec.ts`（既存）、`front/e2e/smoke.spec.ts`（新規）、`front/e2e/backlog.spec.ts`（新規）
 - スタック: Next.js / TypeScript / Playwright (local モード)
-- 禁止事項: 単体テスト追加不可（`docs/01-business-requirements.md` §6）
+- 本節は **E2E 層**の追加設計に限定する。UT / IT の層構成・分類・モック/DB コンテナ方針は §2 を参照する。
 
 ### 現状の未カバー分析
 
