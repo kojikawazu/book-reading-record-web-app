@@ -1,4 +1,4 @@
-name: E2E Tests
+name: CI
 
 on:
   push:
@@ -14,13 +14,12 @@ on:
       - ".github/**/*.md"
 
 jobs:
-  e2e:
+  # 静的ゲート: lint / 型 / フォーマット。最速で全 PR の門番になる。
+  static:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: front
-
     steps:
       - uses: actions/checkout@v4
 
@@ -32,18 +31,97 @@ jobs:
         with:
           node-version: 24
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Cache pnpm store
-        uses: actions/cache@v4
+      # 型チェック（tsc）は Prisma Client の型を要求するため generate しておく。
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/placeholder?schema=public
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+  # UT（単体・jsdom・外部 I/O モック）。DB 不要で高速。
+  ut:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('front/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          package_json_file: front/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run UT
+        run: pnpm test
+
+  # IT（結合・node・実 Postgres）。docker-compose.test.yml の使い捨てコンテナに対して実行する。
+  it:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: front/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # IT はテストコンテナへ db push し @prisma/client を実行時 import するため generate が必要。
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5433/book_record_test?schema=public
+
+      # test:it が docker compose 起動(--wait) → prisma db push → Vitest まで一括で行う。
+      - name: Run IT
+        run: pnpm test:it
+
+      - name: Stop test DB
+        if: always()
+        run: pnpm test:it:down
+
+  # E2E / シナリオ（Playwright / Chromium・local レーン）。受け入れ Case 1-18。
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: front/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

@@ -87,4 +87,9 @@ flowchart TD
 ## 6. デプロイ / CI
 - デプロイ先は Vercel。
 - `front/vercel.json` の `ignoreCommand`（`scripts/vercel-ignore-docs.sh`）で、`docs/` のみ変更されたコミットは Vercel ビルドをスキップする。`front/` 配下やその他ファイルの変更がある場合は通常どおりビルドする。
-- GitHub Actions（`.github/workflows/ci.yml`）は `docs/**` のみの変更時に CI をスキップする。
+- GitHub Actions（`.github/workflows/ci.yml`）は `docs/**` / `*.md` のみの変更時に CI をスキップする。
+- CI は4ジョブ構成（並列実行）:
+  - `static` — `format:check` / `lint` / `tsc --noEmit`（静的ゲート・最速の門番）
+  - `ut` — `pnpm test`（UT・jsdom・DB 不要）
+  - `it` — `pnpm test:it`（IT・`docker-compose.test.yml` の使い捨て Postgres で実行。共有 DB 非接続）
+  - `e2e` — `pnpm test:e2e`（Playwright / Chromium・local レーン・受け入れ Case 1-18）

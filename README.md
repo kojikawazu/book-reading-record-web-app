@@ -1,6 +1,6 @@
 # Book Reading Record Web App
 
-[![E2E Tests](https://github.com/kojikawazu/book-reading-record-web-app/actions/workflows/ci.yml/badge.svg)](https://github.com/kojikawazu/book-reading-record-web-app/actions/workflows/ci.yml)
+[![CI](https://github.com/kojikawazu/book-reading-record-web-app/actions/workflows/ci.yml/badge.svg)](https://github.com/kojikawazu/book-reading-record-web-app/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
@@ -122,10 +122,12 @@ cd front
 pnpm format:check   # Prettier（整形チェック）
 pnpm lint           # ESLint
 pnpm build          # 本番ビルド（内部で prisma generate を実行）
+pnpm test           # Vitest UT（単体）
+pnpm test:it        # Vitest IT（結合・DB コンテナで実 Postgres・要 Docker）
 pnpm test:e2e       # Playwright E2E（local モードで起動）
 ```
 
-> `pnpm build` / `pnpm test:e2e:install` の詳細・E2E のUIモード等は [front/README.md](front/README.md) を参照。
+> `pnpm build` / `pnpm test:e2e:install` の詳細・IT の DB コンテナ運用・E2E のUIモード等は [front/README.md](front/README.md) を参照。
 > 開発フロー（ブランチ運用・テスト必須・PR ルール）は [.claude/rules/](.claude/rules/) にまとまっています。
 
 ## Deploy
