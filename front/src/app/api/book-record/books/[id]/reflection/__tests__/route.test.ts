@@ -97,7 +97,9 @@ describe("POST /api/book-record/books/[id]/reflection（認証必須）", () => 
   });
 
   it("リポジトリが未検出エラーを投げれば 404 に写像する", async () => {
-    H.saveReflection.mockRejectedValue(new H.RepositoryNotFoundError("対象の書籍が見つかりません。"));
+    H.saveReflection.mockRejectedValue(
+      new H.RepositoryNotFoundError("対象の書籍が見つかりません。")
+    );
     const res = await POST(jsonReq(validBody), ctx("missing"));
     expect(res.status).toBe(404);
   });

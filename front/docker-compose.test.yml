@@ -1,0 +1,21 @@
+# IT / E2E(supabase レーン) 専用の使い捨て Postgres。
+# 共有 Supabase プロジェクトには一切接続しない（.claude/rules/testing.md・database.md）。
+# ホスト側は 5433 に公開し、共有 DB の 5432 と衝突しないようにする。
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: book-record-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: book_record_test
+    ports:
+      - "5433:5432"
+    # データを永続化しない（使い捨て・毎回クリーン）。
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d book_record_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

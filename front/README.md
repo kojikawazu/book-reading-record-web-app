@@ -41,6 +41,17 @@ pnpm dev
 pnpm test:e2e:install   # Playwright（Chromium）を取得
 ```
 
+### 4. IT（結合テスト）を実行する場合のみ
+
+IT は使い捨て Postgres コンテナ（`docker-compose.test.yml`・`localhost:5433`）に対して実行します。**Docker が必要**です。共有 Supabase には一切接続しません。
+
+```bash
+pnpm test:it        # コンテナ起動(--wait) → prisma db push → Vitest(node) 実行
+pnpm test:it:down   # テスト DB コンテナを破棄
+```
+
+> 接続先は `vitest.it.config.ts` の既定値（`localhost:5433`）を使うため、`.env.test` は無くても動きます（ローカル上書き用に `.env.test` を置くことも可能）。
+
 ## Environment Variables
 
 `NEXT_PUBLIC_REPOSITORY_DRIVER` が未設定の場合、Supabase の URL/キーが揃っていれば `supabase`、なければ `local` を自動選択します（`src/lib/repository-instance.ts`）。
@@ -87,6 +98,9 @@ pnpm test:e2e:install   # Playwright（Chromium）を取得
 - `pnpm prisma:validate`: `.env.local` を読み込んでPrismaスキーマ検証
 - `pnpm prisma:pull`: `.env.local` を読み込んでSupabase定義をpull
 - `pnpm prisma:generate`: `.env.local` を読み込んでPrisma Client生成
+- `pnpm test`: Vitest UT（単体・jsdom・外部 I/O モック）
+- `pnpm test:it`: Vitest IT（結合・node・DB コンテナを起動して実 Postgres で実行）
+- `pnpm test:it:down`: IT 用テスト DB コンテナの破棄
 - `pnpm test:e2e`: Playwright E2E実行
 - `pnpm test:e2e:ui`: Playwright UIモード
 - `pnpm test:e2e:headed`: Headed実行
