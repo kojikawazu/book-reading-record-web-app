@@ -61,8 +61,9 @@
 ## 6. 禁止事項
 
 - `base/` 配下の編集
-- このリポジトリから Prisma `db push` / `migrate` を実行すること
-- 単体テスト追加（E2E のみ。`docs/08-test-specification.md` 参照）
+- 共有 Supabase プロジェクトに対する Prisma `db push` / `migrate` の実行（テスト用の使い捨て Postgres コンテナへの `db push` は例外的に許可。`docs/08-test-specification.md`・`.claude/rules/database.md` 参照）
+
+> **方針変更（テスト戦略）**: 従来の「単体テスト禁止・E2E のみ」は撤回し、**UT（単体）/ IT（結合）/ E2E の3層**を導入する。詳細は `docs/08-test-specification.md`。
 
 ## 7. 関連ドキュメント
 

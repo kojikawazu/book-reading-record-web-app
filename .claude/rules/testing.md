@@ -20,15 +20,28 @@ globs:
 - ビジネスロジックをモックしない。モックは外部 I/O（HTTP通信、DB接続、ファイルシステム）のみ。
 - `toBeTruthy()` 等の曖昧なアサーションを避け、具体的な値で検証する。
 
-## テストツール
+## テスト層（3層構成）
 
-> 本プロジェクトは **E2E（Playwright）のみ**。単体テストは追加しない（`docs/01-business-requirements.md` §6 禁止事項）。
+> 詳細・受け入れケースは `docs/08-test-specification.md` を正とする。
 
-| テスト種別 | ツール |
-|-----------|--------|
-| E2E テスト | Playwright（Chromium・`local` モード / `front/e2e/`） |
-| スモークテスト | Playwright（起動確認・主要ページ表示） |
+| 層 | ツール | 対象 | 分離手段 |
+|---|---|---|---|
+| **UT（単体）** | Vitest（jsdom） | 純粋ロジック（`helpers`/`validation`）・`ApiRepository`・`LocalStorageRepository`・`auth-guard`・Route Handler・`parse*` | 外部 I/O のみモック |
+| **IT（結合）** | Vitest（node・`*.it.test.ts`・直列） | Route Handler + `PrismaBookRecordRepository` → 実 Postgres | DB コンテナ（docker-compose） |
+| **E2E / シナリオ** | Playwright（Chromium） | フルアプリの主要フロー | local レーン（高速） + supabase レーン（DB コンテナ・本番同等） |
 
-- 受け入れ基準は `docs/08-test-specification.md` の受け入れ E2E ケース（Case 1-18）を正とする。
-- 実行: `cd front && pnpm test:e2e`（webServer は `NEXT_PUBLIC_REPOSITORY_DRIVER=local` で起動）。
-- セレクタは `data-testid` を優先し、文言ベース取得は補助的に用いる。
+- 実行: `pnpm test`（UT）/ `pnpm test:it`（IT）/ `pnpm test:e2e`（E2E）を `front/` で実行する。
+- セレクタ（E2E）は `data-testid` を優先し、文言ベース取得は補助的に用いる。
+- UT/IT/E2E の受け入れケースは `docs/08-test-specification.md` を正とする。
+
+## モック方針
+
+- **モックは外部 I/O 境界のみ**（`fetch` / `localStorage` / Supabase クライアント / Prisma）。ビジネスロジック（`validate*` / `computeWeeklySummary` / 並び順 / 完読判定等）はモックしない。
+- **UT**: 外部 I/O をモックして高速・隔離実行する。準正常・異常系（バリデーション・パース失敗・HTTP エラー）を厚くする主戦場。
+- **IT / E2E**: モックせず **DB コンテナ（実 Postgres）** に対して検証する。`supabase` の共有 DB は使わない。
+
+## DB コンテナ
+
+- IT・E2E(supabase レーン) は `docker-compose.test.yml` の使い捨て Postgres を使う。共有 Supabase プロジェクトには一切接続しない。
+- スキーマ投入は**テストコンテナ限定で `prisma db push`**（`.claude/rules/database.md` の例外規定を参照）。
+- E2E(supabase レーン)の認証は、本番で無効な env ゲート付きテストシームで通す（`docs/06-security-specification.md` 参照）。
