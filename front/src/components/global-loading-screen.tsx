@@ -1,8 +1,11 @@
 type GlobalLoadingScreenProps = {
+  /** 中央に表示する主メッセージ。 */
   message?: string;
+  /** 補助説明の文言。 */
   detail?: string;
 };
 
+/** 画面全体を覆うローディング表示。認証確認中やデータ読み込み中のフォールバックに使う。 */
 export const GlobalLoadingScreen = ({
   message = "画面を読み込んでいます...",
   detail = "少々お待ちください。",

@@ -17,10 +17,17 @@ import {
 } from "./helpers";
 import { validateReflection } from "./validation";
 
+// 現在時刻の ISO 文字列。
 const nowIso = (): string => new Date().toISOString();
 
+// JSON 経由のディープコピー。localStorage 内の参照を呼び出し側へ漏らさないための防御コピー。
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+/**
+ * localStorage を永続化先とする BookRepository 実装（`local` モード）。
+ * すべての操作は parseStoragePayload → 変更 → persistStoragePayload の順で読み書きし、
+ * 破損データは読み込み時に自動復旧される（helpers.parseStoragePayload）。
+ */
 export class LocalStorageRepository implements BookRepository {
   async listBooks(): Promise<Book[]> {
     const payload = parseStoragePayload();
@@ -65,6 +72,15 @@ export class LocalStorageRepository implements BookRepository {
     return copy(book);
   }
 
+  /**
+   * 書籍を部分更新する。完読条件（現在ページ ≥ 総ページ）を満たせば status を completed に強制し、
+   * 逆に条件を満たさず completed 指定なら保存エラーにする。再読（completed 以外）へ戻すと completedAt を解除する。
+   *
+   * @param bookId - 対象書籍の ID
+   * @param patch - 更新するフィールド
+   * @returns 更新後の書籍
+   * @throws {Error} 書籍が存在しない、または完読条件を満たさないのに completed の場合
+   */
   async updateBook(bookId: string, patch: UpdateBookInput): Promise<Book> {
     const payload = parseStoragePayload();
     const index = payload.books.findIndex((item) => item.id === bookId);
@@ -88,6 +104,7 @@ export class LocalStorageRepository implements BookRepository {
       updatedAt: nowIso(),
     };
 
+    // 現在ページが総ページに到達したら完読を自動確定する（docs/03 第2部）。
     if (merged.currentPage >= merged.totalPages) {
       merged.status = "completed";
     }
@@ -96,6 +113,7 @@ export class LocalStorageRepository implements BookRepository {
       throw new Error("完読にするには到達ページを総ページ以上にしてください。");
     }
 
+    // 完読なら completedAt を維持/付与、非完読（再読等）なら解除する。
     if (merged.status === "completed") {
       merged.completedAt = merged.completedAt ?? nowIso();
     } else {
@@ -108,6 +126,15 @@ export class LocalStorageRepository implements BookRepository {
     return copy(merged);
   }
 
+  /**
+   * 進捗を1件記録し、書籍の現在ページ・ステータス・完読日時を更新する。
+   * 到達ページが総ページ以上なら completed に自動確定する。
+   *
+   * @param bookId - 対象書籍の ID
+   * @param input - 進捗記録入力
+   * @returns 更新後の書籍と追加された進捗ログ
+   * @throws {Error} 書籍が存在しない、または完読条件を満たさないのに completed の場合
+   */
   async addProgressLog(
     bookId: string,
     input: CreateProgressLogInput
@@ -158,6 +185,14 @@ export class LocalStorageRepository implements BookRepository {
     };
   }
 
+  /**
+   * 感想を保存する。既存の感想があれば createdAt を保持したまま上書きする（再完読時の再編集）。
+   *
+   * @param bookId - 対象書籍の ID
+   * @param input - 感想入力
+   * @returns 更新後の書籍
+   * @throws {Error} 書籍が存在しない、または感想入力が上限超過の場合
+   */
   async saveReflection(bookId: string, input: ReflectionInput): Promise<Book> {
     const payload = parseStoragePayload();
     const index = payload.books.findIndex((item) => item.id === bookId);
@@ -173,6 +208,7 @@ export class LocalStorageRepository implements BookRepository {
     }
 
     const source = payload.books[index];
+    // 初回作成時のみ createdAt を採番し、上書き時は元の作成日時を維持する。
     const createdAt = source.reflection?.createdAt ?? nowIso();
 
     const reflection = {
@@ -208,6 +244,11 @@ export class LocalStorageRepository implements BookRepository {
     });
   }
 
+  /**
+   * localStorage の生ペイロードをそのまま返す（E2E などで内部状態を検証する用途）。
+   *
+   * @returns 現在の永続化ペイロード
+   */
   readRawPayload(): StoragePayload {
     return parseStoragePayload();
   }

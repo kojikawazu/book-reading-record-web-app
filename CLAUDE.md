@@ -13,7 +13,14 @@
 | quality-gate.md | 全体 | 品質ゲート（セルフレビュー・設計/実装レビュー） |
 | documentation.md | 全体 | ドキュメント更新ルール |
 | git.md | 全体 | GitHub Flow・ブランチ命名・push 禁止物 |
-| testing.md | 全体 | テスト分類・原則 |
+| testing.md | 全体 | テスト分類・原則・E2E(Playwright)ツール |
+| coding-standards.md | 全体 | コーディング規約（TypeScript strict・pnpm・ESLint/Prettier） |
+| error-handling.md | 全体 | エラーハンドリング方針（バリデーション・HTTP ステータス・統一レスポンス） |
+| security.md | 全体 | セキュリティ共通方針（認証・通信・インジェクション・シークレット） |
+| jsdoc.md | front/src/** | JSDoc(TSDoc) 規約（公開シンボルに必須） |
+| frontend.md | front/src/app/**, components/**, lib/** | フロント設計（Repository パターン・server-first・ロジック分離） |
+| api.md | front/src/app/api/**, lib/server/** | Route Handlers（一体型 API・Prisma 委譲・認可） |
+| database.md | front/prisma/**, lib/server/** | Prisma（db pull 運用・BookRecord* 命名・RLS） |
 
 ## Docs
 

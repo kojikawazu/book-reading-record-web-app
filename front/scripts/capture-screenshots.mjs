@@ -96,8 +96,22 @@ const seed = {
     },
   ],
   progressLogs: [
-    { id: "a1", bookId: BOOK1, page: 90, memo: "第2章まで。環境を整えるのが先。", status: "reading", loggedAt: iso(2) },
-    { id: "a2", bookId: BOOK1, page: 140, memo: "第3章。1%改善の複利。", status: "reading", loggedAt: iso(1) },
+    {
+      id: "a1",
+      bookId: BOOK1,
+      page: 90,
+      memo: "第2章まで。環境を整えるのが先。",
+      status: "reading",
+      loggedAt: iso(2),
+    },
+    {
+      id: "a2",
+      bookId: BOOK1,
+      page: 140,
+      memo: "第3章。1%改善の複利。",
+      status: "reading",
+      loggedAt: iso(1),
+    },
     { id: "b1", bookId: BOOK2, page: 300, memo: "終盤", status: "reading", loggedAt: iso(4) },
     { id: "b2", bookId: BOOK2, page: 360, memo: "読了！", status: "completed", loggedAt: iso(3) },
     { id: "d1", bookId: BOOK4, page: 120, memo: "一旦保留", status: "paused", loggedAt: iso(5) },
@@ -129,7 +143,6 @@ const main = async () => {
     await page.waitForSelector(shot.wait, { timeout: 20000 });
     await page.waitForTimeout(600);
     await page.screenshot({ path: resolve(OUT_DIR, shot.file), fullPage: true });
-    // eslint-disable-next-line no-console
     console.log(`saved docs/assets/${shot.file}`);
   }
 
@@ -137,7 +150,6 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error(error);
   process.exit(1);
 });

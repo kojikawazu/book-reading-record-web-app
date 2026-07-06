@@ -6,6 +6,12 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "@/lib/supabase/client";
 import { repositoryDriver } from "@/lib/repository-instance";
 
+/**
+ * `?next=` の遷移先を検証する。相対パス（"/" 始まり）以外はオープンリダイレクトを避けて "/" に丸める。
+ *
+ * @param value - クエリから取得した遷移先候補
+ * @returns 安全な遷移先パス
+ */
 const sanitizeNextPath = (value: string | null): string => {
   if (!value || !value.startsWith("/")) {
     return "/";
@@ -14,6 +20,7 @@ const sanitizeNextPath = (value: string | null): string => {
   return value;
 };
 
+/** ログイン本体。Google OAuth ボタンと、ログイン済みなら nextPath への自動リダイレクトを担う。 */
 const LoginContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -118,6 +125,7 @@ const LoginContent = () => {
   );
 };
 
+/** useSearchParams のサスペンス境界に出す軽量フォールバック。 */
 const LoginFallback = () => {
   return (
     <section className="panel-card mx-auto w-full max-w-md space-y-4 p-8 text-center">
@@ -127,6 +135,10 @@ const LoginFallback = () => {
   );
 };
 
+/**
+ * ログインページ（`/auth/login`）。useSearchParams を使う LoginContent を
+ * Suspense で包む（App Router のクライアント検索パラメータ利用の要件）。
+ */
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full items-center justify-center px-4">

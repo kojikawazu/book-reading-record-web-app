@@ -10,6 +10,12 @@ const repository = new PrismaBookRecordRepository();
 
 const BOOK_STATUS_VALUES = ["not_started", "reading", "paused", "completed"] as const;
 
+/**
+ * リクエストボディを CreateProgressLogInput へ検証・変換する。page/memo/status が不正なら null。
+ *
+ * @param body - JSON パース済みのリクエストボディ
+ * @returns 妥当な入力、または不正時は null
+ */
 const parseCreateProgressInput = (body: unknown): CreateProgressLogInput | null => {
   if (!body || typeof body !== "object") {
     return null;
@@ -52,6 +58,13 @@ type Params = {
   }>;
 };
 
+/**
+ * GET /api/book-record/books/[id]/progress-logs — 進捗履歴を取得する（未認証可）。
+ *
+ * @param _request - 受信リクエスト（未使用）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 進捗ログ一覧 JSON、またはエラー時のエラーレスポンス
+ */
 export async function GET(_request: NextRequest, context: Params) {
   try {
     const { id } = await context.params;
@@ -70,6 +83,13 @@ export async function GET(_request: NextRequest, context: Params) {
   }
 }
 
+/**
+ * POST /api/book-record/books/[id]/progress-logs — 進捗を記録する（Bearer 認証必須）。
+ *
+ * @param request - 受信リクエスト（Authorization ヘッダと進捗ボディ）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 更新後の書籍と進捗ログ JSON（201）、またはエラー時のエラーレスポンス
+ */
 export async function POST(request: NextRequest, context: Params) {
   try {
     await requireAuthenticatedUser(request);

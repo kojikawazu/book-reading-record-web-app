@@ -1,10 +1,16 @@
 import Link from "next/link";
 
 type AuthRequiredPanelProps = {
+  /** ログイン後に戻す遷移先パス（`?next=` に埋め込む）。 */
   nextPath: string;
+  /** 設定起因のエラー文言。あれば警告として併記する。 */
   configError?: string | null;
 };
 
+/**
+ * 更新系操作が認証必須のときに表示する、ログイン導線付きパネル。
+ * `nextPath` を保持したログインリンクを提示する。
+ */
 export const AuthRequiredPanel = ({ nextPath, configError }: AuthRequiredPanelProps) => {
   const loginHref = `/auth/login?next=${encodeURIComponent(nextPath)}`;
 

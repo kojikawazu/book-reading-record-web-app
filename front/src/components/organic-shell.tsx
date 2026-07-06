@@ -6,12 +6,21 @@ import { ReactNode, useMemo, useState } from "react";
 import { useAuthSession } from "@/lib/use-auth-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
+/** サイドバー/モバイルナビの共通メニュー定義。 */
 const NAV_ITEMS: Array<{ href: string; label: string }> = [
   { href: "/", label: "ホーム" },
   { href: "/books/new", label: "書籍登録" },
   { href: "/stats", label: "統計レポート" },
 ];
 
+/**
+ * ナビ項目が現在パスに対応しているかを判定する。ホーム（"/"）は完全一致、
+ * それ以外は前方一致で「配下も含めてアクティブ」とみなす。
+ *
+ * @param pathname - 現在の URL パス
+ * @param href - ナビ項目のリンク先
+ * @returns アクティブなら true
+ */
 const isActivePath = (pathname: string, href: string): boolean => {
   if (href === "/") {
     return pathname === "/";
@@ -19,15 +28,26 @@ const isActivePath = (pathname: string, href: string): boolean => {
   return pathname.startsWith(href);
 };
 
+/** OrganicShell に渡す表示・スロット設定。 */
 type OrganicShellProps = {
+  /** ヘッダーの画面タイトル。 */
   title: string;
+  /** ヘッダーのサブタイトル。 */
   subtitle?: string;
+  /** ヘッダー右側に差し込むアクション要素（戻るリンク等）。 */
   action?: ReactNode;
+  /** メイン領域の data-testid（E2E 用の画面識別子）。 */
   contentTestId: string;
+  /** ヘッダー検索ボックスのプレースホルダ（検索は装飾用で非機能）。 */
   headerSearchPlaceholder?: string;
+  /** メイン領域に描画する本文。 */
   children: ReactNode;
 };
 
+/**
+ * 全画面共通のアプリシェル。左ナビ・ヘッダー（検索/ログイン）・フッターを提供し、
+ * `children` を本文に描画する。認証状態に応じてログイン/ログアウト操作を出し分ける。
+ */
 export const OrganicShell = ({
   title,
   subtitle,

@@ -33,6 +33,13 @@ const SECTION_DOT_CLASS: Record<SectionTone, string> = {
   pending_reflection: "section-dot-pending-reflection",
 };
 
+/**
+ * 書籍配列をタイトル・著者・タグの部分一致で絞り込む（大文字小文字無視）。空クエリなら全件返す。
+ *
+ * @param books - 絞り込み対象
+ * @param query - 検索キーワード
+ * @returns 一致した書籍配列
+ */
 const filterBooksByQuery = (books: Book[], query: string): Book[] => {
   const normalized = query.trim().toLocaleLowerCase();
 
@@ -46,6 +53,12 @@ const filterBooksByQuery = (books: Book[], query: string): Book[] => {
   });
 };
 
+/**
+ * 進捗率（%・小数第1位四捨五入）を求める。総ページが 0 以下なら 0 を返す。
+ *
+ * @param book - 対象書籍
+ * @returns 0〜100 の進捗率
+ */
 const progressRate = (book: Book): number => {
   if (book.totalPages <= 0) {
     return 0;
@@ -54,6 +67,7 @@ const progressRate = (book: Book): number => {
   return Math.round((book.currentPage / book.totalPages) * 1000) / 10;
 };
 
+/** 書籍1冊分のカード。詳細ページへのリンクと進捗サマリーを表示する。 */
 const BookCard = ({ book }: { book: Book }) => {
   return (
     <Link
@@ -79,6 +93,7 @@ const BookCard = ({ book }: { book: Book }) => {
   );
 };
 
+/** ステータス別（または感想未記入）の書籍一覧セクション。空なら「データがありません」を表示する。 */
 const Section = ({
   title,
   testId,
@@ -91,7 +106,10 @@ const Section = ({
   tone: SectionTone;
 }) => {
   return (
-    <section data-testid={testId} className={`panel-soft ${SECTION_TONE_CLASS[tone]} space-y-3 p-5`}>
+    <section
+      data-testid={testId}
+      className={`panel-soft ${SECTION_TONE_CLASS[tone]} space-y-3 p-5`}
+    >
       <h2 className="flex items-center gap-2 text-lg font-semibold text-[color:var(--foreground)]">
         <span aria-hidden className={`h-2.5 w-2.5 rounded-full ${SECTION_DOT_CLASS[tone]}`} />
         {title}
@@ -111,6 +129,10 @@ const Section = ({
   );
 };
 
+/**
+ * ダッシュボード（`/`）。書籍のステータス別一覧・検索・週次サマリー・今週のバッジを表示する。
+ * 総ページ数が不正（0 以下）な書籍は一覧から除外し件数を警告表示、破損復旧時は復旧メッセージを出す。
+ */
 export default function DashboardPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
