@@ -11,6 +11,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prisma:generate": "node scripts/prisma-with-env-local.mjs generate",
     "prisma:pull": "node scripts/prisma-with-env-local.mjs db pull",
     "prisma:validate": "node scripts/prisma-with-env-local.mjs validate",
@@ -38,9 +40,11 @@
     "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^63.0.10",
+    "jsdom": "^29.1.1",
     "prettier": "^3.8.1",
     "prisma": "^6.16.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
