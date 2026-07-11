@@ -127,6 +127,20 @@ pnpm test:it        # Vitest IT（結合・DB コンテナで実 Postgres・要 
 pnpm test:e2e       # Playwright E2E（local モードで起動）
 ```
 
+### Make（ルートからの一本化入口）
+
+上記 pnpm scripts はルートの `Makefile` からも叩けます。実体は同じ pnpm scripts の薄いラッパーで、`front/` に `cd` せずリポジトリルートから実行できます。
+
+```bash
+make help           # 全ターゲット一覧（説明付き）
+make install        # 依存インストール（pnpm install）
+make dev            # 開発サーバー起動（next dev）
+make check          # 静的ゲート一括（format:check → lint）
+make test           # UT / make test-it: IT / make test-e2e: E2E
+make test-all       # UT → IT → E2E を順に実行
+make db-up / db-down  # IT 用 Postgres コンテナの起動 / 破棄
+```
+
 > `pnpm build` / `pnpm test:e2e:install` の詳細・IT の DB コンテナ運用・E2E のUIモード等は [front/README.md](front/README.md) を参照。
 > 開発フロー（ブランチ運用・テスト必須・PR ルール）は [.claude/rules/](.claude/rules/) にまとまっています。
 
