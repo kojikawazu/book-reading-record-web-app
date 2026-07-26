@@ -5,7 +5,7 @@ import {
   ProgressLog,
   ReflectionInput,
   UpdateBookInput,
-} from "./types";
+} from "@/types/book";
 
 /**
  * 画面が依存するデータアクセス契約。`local`（LocalStorageRepository）/

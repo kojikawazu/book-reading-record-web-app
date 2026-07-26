@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { ApiRepository } from "@/lib/api-repository";
+import { ApiRepository } from "@/repositories/api-repository";
 
 // Supabase クライアントは外部 I/O 境界なのでモックする。
 const { mockGetSession } = vi.hoisted(() => ({ mockGetSession: vi.fn() }));

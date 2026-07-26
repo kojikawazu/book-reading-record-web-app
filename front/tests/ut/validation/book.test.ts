@@ -4,7 +4,7 @@ import {
   validateBookForm,
   validateProgressForm,
   validateReflection,
-} from "@/lib/validation";
+} from "@/validation/book";
 
 const validBookInput = {
   title: "リーダブルコード",

@@ -1,6 +1,6 @@
-import { ApiRepository } from "./api-repository";
-import { LocalStorageRepository } from "./local-storage-repository";
-import { BookRepository } from "./repository";
+import { ApiRepository } from "@/repositories/api-repository";
+import { LocalStorageRepository } from "@/repositories/local-storage-repository";
+import { BookRepository } from "@/repositories/repository";
 
 /**
  * 使用するドライバーを決定する。NEXT_PUBLIC_REPOSITORY_DRIVER の明示値を最優先し、

@@ -1,11 +1,11 @@
+import { STATUS_ORDER } from "@/constants/book";
 import {
   INITIAL_STORAGE_PAYLOAD,
   RECOVERY_NOTICE_KEY,
   STORAGE_KEY,
   STORAGE_VERSION,
-  STATUS_ORDER,
-} from "./constants";
-import { Book, BookStatus, ProgressLog, StoragePayload, WeeklySummary } from "./types";
+} from "@/constants/storage";
+import { Book, BookStatus, ProgressLog, StoragePayload, WeeklySummary } from "@/types/book";
 
 // ISO 日時文字列を降順比較する（新しい日時ほど前）。
 const byDateDesc = (a: string, b: string): number => {

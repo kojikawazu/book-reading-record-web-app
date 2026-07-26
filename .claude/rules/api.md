@@ -9,7 +9,7 @@ globs: "front/src/app/api/**,front/src/lib/server/**"
 
 - 本プロジェクトは**一体型**。別バックエンドを持たず、Next.js App Router の Route Handlers が API を完結する。
 - Route Handler は薄く保ち、データ操作は `PrismaBookRecordRepository`（`src/lib/server/prisma-book-record-repository.ts`）へ委譲する。ハンドラーに業務ロジックを埋め込まない。
-- クライアント側は `ApiRepository`（`src/lib/api-repository.ts`）から `/api/book-record/*` を呼び出す（`supabase` モード時）。
+- クライアント側は `ApiRepository`（`src/repositories/api-repository.ts`）から `/api/book-record/*` を呼び出す（`supabase` モード時）。
 
 ## ディレクトリ構成
 
@@ -27,7 +27,7 @@ src/app/api/book-record/
 - **Prisma が返した行オブジェクトをそのまま `NextResponse.json()` に流さない**。API の責務は「**この画面に必要なものだけ**を返す」ことであり、パススルーは責務放棄にあたる。
 - **公開してよいフィールドだけを厳選**して返す（内部 ID・監査カラム・`userId`・他ユーザー情報を漏らさない）。**ブラウザに届いた時点で、画面に表示していなくてもユーザーは全て閲覧できる**。
 - 変換は明示的に行う。**スプレッド（`{ ...row, extra }`）で組み立てない** — `schema.prisma` にカラムが増えた瞬間、自動的に公開される。マッパー関数で返すフィールドを列挙する。
-- **画面単位のレスポンス型を `lib/types.ts` に定義**し、その形に合わせて整形する。フロントはこの型をそのまま使い、再変換しない（`frontend.md`「型の扱い」）。
+- **画面単位のレスポンス型を `src/types/` に定義**し、その形に合わせて整形する。フロントはこの型をそのまま使い、再変換しない（`frontend.md`「型の扱い」）。
 - **Route Handler から UI 層（`components/`）を import しない**。API はサーバー側の層であり、UI に依存してはならない（`frontend.md`「レイヤ依存の一方向ルール」と対になる規定）。
 - エラーレスポンスも整形する。**Prisma のエラーメッセージ・SQL・スタックトレースをそのまま返さない**（`error-handling.md` に従い `{ message }` のクライアント向けメッセージに変換する）。ログにはスタックトレースを残す。
 - **理由**: 過剰公開（over-fetching / 機密漏洩）の防止、DB スキーマ変更がクライアント契約に直接漏れない疎結合化、転送量の削減。
@@ -35,7 +35,7 @@ src/app/api/book-record/
 ## 共通方針
 
 - RESTful 設計（リソース指向エンドポイント）。レスポンス形式は JSON（`NextResponse.json()`）。
-- 入力バリデーションは Route Handler / `src/lib/validation.ts` で実施する。
+- 入力バリデーションは Route Handler / `src/validation/book.ts` で実施する。
 - エラー時は適切な HTTP ステータスコード（400/401/404/500）と `{ message }` 形式で返す（`docs/07-api-specification.md` §3）。
 
 ## 認可

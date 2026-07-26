@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { OrganicShell } from "@/components/organic-shell";
-import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/lib/constants";
+import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/constants/book";
 import { computeWeeklySummary, consumeRecoveryNotice, reflectionIsMissing } from "@/lib/helpers";
-import { repository } from "@/lib/repository-instance";
-import { Book, BookStatus, ProgressLog } from "@/lib/types";
+import { repository } from "@/repositories/repository-instance";
+import { Book, BookStatus, ProgressLog } from "@/types/book";
 
 const SECTION_CONFIG: Array<{ status: BookStatus; testId: string }> = [
   { status: "not_started", testId: "section-not-started" },

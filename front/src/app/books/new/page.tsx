@@ -6,11 +6,11 @@ import { FormEvent, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
-import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
-import { repository } from "@/lib/repository-instance";
-import { BookFormat, BookStatus } from "@/lib/types";
-import { useAuthSession } from "@/lib/use-auth-session";
-import { normalizeTags, validateBookForm, ValidationErrors } from "@/lib/validation";
+import { FORMAT_LABELS, STATUS_LABELS } from "@/constants/book";
+import { repository } from "@/repositories/repository-instance";
+import { BookFormat, BookStatus } from "@/types/book";
+import { useAuthSession } from "@/hooks/use-auth-session";
+import { normalizeTags, validateBookForm, ValidationErrors } from "@/validation/book";
 
 /**
  * 書籍登録ページ（`/books/new`）。必須項目を検証して作成し、成功時はダッシュボードへ戻る。
