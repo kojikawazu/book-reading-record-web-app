@@ -19,6 +19,7 @@
 | duplication.md | 全体 | 重複と共通化の判断基準（同じ知識のみ共通化・3回目で共通化） |
 | static-analysis.md | 全体 | 静的解析の運用（Formatter/Linter の役割分担・CI 必須・警告ゼロ） |
 | dead-code.md | 全体 | デッドコード禁止（コメントアウト・未使用 export・スキップ放置テスト） |
+| github-actions.md | .github/workflows/** | CI の発火ルール（コードとドキュメントを別フィルタ・別ジョブ・必須チェックと paths-ignore を併用しない） |
 | typescript.md | front/src/** | TypeScript 固有規約（type/interface・型/定数の配置・any 禁止・import type） |
 | error-handling.md | 全体 | エラーハンドリング方針（バリデーション・HTTP ステータス・統一レスポンス） |
 | security.md | 全体 | セキュリティ共通方針（認証・通信・インジェクション・シークレット） |
