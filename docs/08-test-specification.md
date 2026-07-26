@@ -86,6 +86,19 @@
 
 ## 3. 実行環境
 
+### 3.0 テストファイルの配置
+
+テストは専用ディレクトリに集約し、`src/` にコロケートしない（配置規約は `.claude/rules/testing.md`）。
+
+| 層 | 配置 | 実行構成 |
+|---|---|---|
+| UT | `front/tests/ut/`（`src/` の構造をミラー） | `vitest.config.ts` |
+| IT | `front/tests/it/`（`*.it.test.ts`） | `vitest.it.config.ts` |
+| E2E | `front/e2e/` | `playwright.config.ts` |
+| テスト足場 | `front/tests/support/`（globalSetup・ハーネス・スタブ） | — |
+
+import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアスを使う。
+
 - 実行ディレクトリ: `front/`
 - コマンド:
   - `pnpm test` — UT（Vitest / jsdom）

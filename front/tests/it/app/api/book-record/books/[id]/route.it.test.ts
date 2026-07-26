@@ -6,10 +6,10 @@ vi.mock("@/lib/server/auth-guard", async (importActual) => {
 });
 
 import { AuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
-import { disconnectDb, resetBookRecordTables } from "@/test/it-db";
-import { ctx, jsonReq, validBookBody } from "@/test/it-harness";
-import { POST as createBookRoute } from "../../route";
-import { GET, PATCH } from "../route";
+import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
+import { ctx, jsonReq, validBookBody } from "@tests/support/it-harness";
+import { POST as createBookRoute } from "@/app/api/book-record/books/route";
+import { GET, PATCH } from "@/app/api/book-record/books/[id]/route";
 
 const authMock = vi.mocked(requireAuthenticatedUser);
 const MISSING_ID = "00000000-0000-0000-0000-000000000000";

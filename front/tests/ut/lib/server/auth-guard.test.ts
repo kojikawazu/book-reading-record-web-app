@@ -23,7 +23,7 @@ const loadGuard = async (withEnv: boolean) => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   }
-  return import("../auth-guard");
+  return import("@/lib/server/auth-guard");
 };
 
 beforeEach(() => {

@@ -8,9 +8,9 @@ vi.mock("@/lib/server/auth-guard", async (importActual) => {
 });
 
 import { AuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
-import { disconnectDb, resetBookRecordTables } from "@/test/it-db";
-import { jsonReq, validBookBody } from "@/test/it-harness";
-import { GET, POST } from "../route";
+import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
+import { jsonReq, validBookBody } from "@tests/support/it-harness";
+import { GET, POST } from "@/app/api/book-record/books/route";
 
 const authMock = vi.mocked(requireAuthenticatedUser);
 
@@ -73,7 +73,7 @@ describe("IT: /api/book-record/books（実 Postgres）", () => {
       (b: { title: string }) => b.title === "A"
     );
     await (
-      await import("../[id]/route")
+      await import("@/app/api/book-record/books/[id]/route")
     ).PATCH(jsonReq({ author: "改訂" }), {
       params: Promise.resolve({ id: first.id }),
     });

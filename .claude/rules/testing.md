@@ -34,6 +34,28 @@ globs:
 - セレクタ（E2E）は `data-testid` を優先し、文言ベース取得は補助的に用いる。
 - UT/IT/E2E の受け入れケースは `docs/08-test-specification.md` を正とする。
 
+## テストファイルの配置（集約する）
+
+**テストは専用ディレクトリに集約し、`src/` にコロケートしない。**
+
+```text
+front/
+├── e2e/                    # E2E（Playwright）。playwright.config.ts の testDir
+├── tests/
+│   ├── ut/                 # UT。src/ の構造をミラーする
+│   ├── it/                 # IT（*.it.test.ts）
+│   └── support/            # テスト足場（globalSetup・ハーネス・スタブ）
+└── src/                    # 本番コードのみ。テストファイルを置かない
+```
+
+- **`tests/ut/` と `tests/it/` は `src/` のディレクトリ構造をミラーする**（例: `src/lib/helpers.ts` → `tests/ut/lib/helpers.test.ts`）。対応関係を機械的に辿れるようにするため。
+- **UT と IT はディレクトリで分ける**。実行構成・実行環境（jsdom / node）・所要時間が異なり、`include` パターンで確実に分離する必要があるため。IT のファイル名は `*.it.test.ts` を維持する。
+- **テスト足場は `tests/support/` に置く**。`src/` にテスト専用コードを残さない。
+- **import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアスを使う**。集約により相対パスが深くなるため、テストでも相対 import をしない（`frontend.md`「インポート」）。
+- E2E は Playwright の慣習に従い `front/e2e/` に置く（`tests/` 配下に移動しない）。
+
+**なぜ集約するか**: `src/` を本番コードだけにすると、ビルド対象・カバレッジ対象・レビュー対象の境界がディレクトリと一致する。コロケーションは対象ファイルの近さと引き換えに、この境界を曖昧にする。
+
 ## モック方針
 
 - **モックは外部 I/O 境界のみ**（`fetch` / `localStorage` / Supabase クライアント / Prisma）。ビジネスロジック（`validate*` / `computeWeeklySummary` / 並び順 / 完読判定等）はモックしない。

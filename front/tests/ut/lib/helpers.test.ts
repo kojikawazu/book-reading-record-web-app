@@ -10,9 +10,9 @@ import {
   sortBooks,
   sortLogsAsc,
   sortLogsDesc,
-} from "../helpers";
-import { RECOVERY_NOTICE_KEY, STORAGE_KEY, STORAGE_VERSION } from "../constants";
-import { Book, ProgressLog } from "../types";
+} from "@/lib/helpers";
+import { RECOVERY_NOTICE_KEY, STORAGE_KEY, STORAGE_VERSION } from "@/lib/constants";
+import { Book, ProgressLog } from "@/lib/types";
 
 const makeBook = (overrides: Partial<Book> = {}): Book => ({
   id: "b1",

@@ -1,9 +1,9 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { ApiRepository } from "../api-repository";
+import { ApiRepository } from "@/lib/api-repository";
 
 // Supabase クライアントは外部 I/O 境界なのでモックする。
 const { mockGetSession } = vi.hoisted(() => ({ mockGetSession: vi.fn() }));
-vi.mock("../supabase/client", () => ({
+vi.mock("@/lib/supabase/client", () => ({
   isSupabaseAuthConfigured: true,
   getSupabaseBrowserClient: () => ({ auth: { getSession: mockGetSession } }),
 }));
