@@ -210,11 +210,14 @@ jobs:
       # リンク切れは --offline で内部リンクのみ検査する。外部 URL を叩くと相手先の
       # 一時的な障害やレート制限で CI が落ち、警告の常態化を招くため対象にしない。
       # .claude/ は隠しディレクトリのため、glob を明示して検査対象に含める。
+      # base/ は Google AI Studio から取り込んだ参照用の生成物で、.gitignore 対象の
+      # .env.local を参照している。本体の規約対象外なので markdownlint と同様に除外する。
       - name: Link check (internal only)
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
             --offline --no-progress
+            --exclude-path base
             '**/*.md' '.claude/**/*.md'
           fail: true
 
