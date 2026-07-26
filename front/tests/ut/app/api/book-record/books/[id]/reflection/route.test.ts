@@ -44,7 +44,7 @@ vi.mock("@/lib/server/auth-guard", () => ({
   isAuthGuardError: (v: unknown) => v instanceof H.AuthGuardError,
 }));
 
-import { POST } from "../route";
+import { POST } from "@/app/api/book-record/books/[id]/reflection/route";
 
 // `request.json()` だけを持つ最小の NextRequest。
 const jsonReq = (body: unknown) => ({ json: async () => body }) as unknown as NextRequest;

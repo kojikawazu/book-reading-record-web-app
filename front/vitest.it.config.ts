@@ -50,9 +50,9 @@ Object.assign(process.env, testEnv);
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.it.test.ts"],
+    include: ["tests/it/**/*.it.test.ts"],
     exclude: ["node_modules", "e2e/**"],
-    globalSetup: ["src/test/it-global-setup.ts"],
+    globalSetup: ["tests/support/it-global-setup.ts"],
     // DB 状態を共有するため直列で回す（並行だと truncate と読み書きが競合する）。
     // Vitest 4 では poolOptions が廃止されトップレベル指定になった。
     fileParallelism: false,
@@ -66,8 +66,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@tests": path.resolve(__dirname, "./tests"),
       // サーバー専用ガード（import "server-only"）はテスト実行環境では不要なため空スタブへ差し替える。
-      "server-only": path.resolve(__dirname, "./src/test/server-only-stub.ts"),
+      "server-only": path.resolve(__dirname, "./tests/support/server-only-stub.ts"),
     },
   },
 });
