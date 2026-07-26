@@ -28,6 +28,21 @@ globs: "front/src/app/**,front/src/components/**,front/src/hooks/**,front/src/re
 - モバイル優先。エラーメッセージは入力項目の直下に表示する。
 - `dangerouslySetInnerHTML` を使用しない（React 標準エスケープを前提）。
 
+## 関心別にディレクトリを切る
+
+`types/` `constants/` `validation/` `repositories/` は**それぞれ独立したディレクトリ**として `src/` 直下に置く。いずれも**単一ファイルにまとめない**（`src/types.ts` / `lib/validation.ts` のような形にしない。ドメイン単位でファイルを分ける）。
+
+| ディレクトリ | 置くもの | 置かないもの |
+|---|---|---|
+| `types/` | 2 箇所以上から参照される型 | 値・ロジック |
+| `constants/` | 全環境で不変な値 | 環境変数・型を導出する定数（`types/` 側へ） |
+| `validation/` | 入力検証（`validate*` 関数） | 検証を伴わない型定義（`types/` へ） |
+| `repositories/` | **データアクセス**（API 呼び出し・`localStorage` 読み書き・Repository 実装） | UI・画面都合の整形・業務判断 |
+| `lib/` | **通信を持たない純粋ユーティリティ・業務ロジック**（集計・並び順・完読判定） | データアクセス（`repositories/` へ）・定数・型 |
+
+- **上流テンプレートの `schemas/`（Zod スキーマ）に相当するのが本プロジェクトの `validation/`**。Zod 未導入のため名前を `validation/` としている。Zod を導入する際に `schemas/` へ改称するかは、その時点で判断する（`typescript.md`「スキーマバリデーション」）。
+- `lib/server/` は上表と別軸（サーバー専用境界）で切っている。クライアントから import しないこと自体が目的のため、中身の性質で分類しない。
+
 ## レイヤ依存の一方向ルール
 
 **依存は上位から下位への一方向のみ**。下位レイヤが上位レイヤを import してはならない。
@@ -43,12 +58,13 @@ app/  →  components/  →  hooks/  →  repositories/ ・ lib/ ・ validation/
 | レイヤ | import してよい | import 禁止 |
 |---|---|---|
 | `app/` | `components/`, `hooks/`, `repositories/`, `lib/`, `validation/`, `types/`, `constants/`, `lib/server/`（サーバー側のみ） | （なし。app は誰からも参照されない） |
-| `components/` | 下位の `components/`, `hooks/`, `types/`, `constants/` | **`app/`**（ページ固有の型・定数を含む）、**`lib/server/`** |
+| `components/` | 下位の `components/`, `hooks/`, `lib/`, `types/`, `constants/` | **`app/`**（ページ固有の型・定数を含む）、**`repositories/`**、**`lib/server/`** |
 | `hooks/` | `repositories/`, `lib/`, `types/`, `constants/` | **`app/`**, **`components/`**（JSX を返さない） |
 | `repositories/` `lib/` `validation/` | `types/`, `constants/`, 同位の下位モジュール | **`app/`**, **`components/`**, **`hooks/`** |
 | `lib/server/` | `types/`, `constants/` | **`app/`**, **`components/`**, **`hooks/`**, クライアント側 `repositories/` |
 | `types/` `constants/` | （原則どこにも依存しない。`constants/` は `types/` のみ参照可） | 上位レイヤすべて |
 
+- **`components/` から `repositories/` を直接 import しない**。データ取得は `app/` のサーバーコンポーネント、または `hooks/` 経由で行い、コンポーネントは受け取ったデータの描画に専念する。コンポーネントが自前でデータを取りに行くと、同じ取得が画面内で重複し、テスト時に必ず通信のモックが要るようになる。
 - **`components/` 内も一方向**にする。汎用度の高いもの（`organic-shell.tsx`）ほど下位に置き、個別画面用コンポーネントを import しない。
 - **`app/api/`（Route Handler）から `components/` を import しない**。API はサーバー側の層であり、UI 層に依存してはならない（`api.md` 参照）。
 - **`lib/server/` を Client Component から import しない**。`prisma-client.ts` は `DATABASE_URL` を、`auth-guard.ts` はサーバー専用の検証ロジックを持つため、**クライアントバンドルに混入するとシークレットが漏洩する**。`server-only` パッケージで境界を機械的に守ることを推奨する。
