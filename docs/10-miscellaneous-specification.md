@@ -25,6 +25,7 @@
 ## 2. 参照資料
 
 ### 2.1 バックログ Issue
+
 - Issue #9: 書籍削除機能の追加（B1）
 - Issue #10: 書籍イメージ（書影）表示の追加（B2）
 - Issue #11: 書籍登録で著者名を任意入力に変更（B3）
@@ -33,6 +34,7 @@
 詳細なタスク状態は `docs/11-tasks.md` を参照する。
 
 ### 2.2 関連ドキュメント索引
+
 - `docs/01-business-requirements.md` — 要求仕様（背景・スコープ・制約）
 - `docs/02-requirements-specification.md` — 要件仕様（機能要件・優先度）
 - `docs/03-functional-specification.md` — 機能仕様（UI/UX・業務ルール）

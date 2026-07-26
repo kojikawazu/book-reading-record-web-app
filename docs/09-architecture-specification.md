@@ -13,11 +13,13 @@
 - [6. デプロイ / CI](#6-デプロイ--ci)
 
 ## 1. リポジトリ構成
+
 - `base/`: 参照用の既存MVP（**read-only**）
 - `front/`: 実装本体（Next.js / TypeScript / Tailwind CSS）
 - `docs/`: 要件・仕様・E2Eケース
 
 ## 2. 技術スタック
+
 - フロントエンド: Next.js / TypeScript / Tailwind CSS
 - 認証: Supabase Auth（Google OAuth）
 - データ永続化: Supabase PostgreSQL（Prisma）/ localStorage
@@ -25,6 +27,7 @@
 - デプロイ先: Vercel
 
 ## 3. データアクセスアーキテクチャ
+
 - 画面はRepositoryインターフェース経由でデータ操作する（`docs/07-api-specification.md` §2）
 - ドライバーは `NEXT_PUBLIC_REPOSITORY_DRIVER` で切り替える（`supabase` / `local`）
 - `local` モードでは `LocalStorageRepository` を利用する
@@ -45,6 +48,7 @@ flowchart TD
 ```
 
 ### 3.1 `supabase` モード方針
+
 - ユーザープロフィール機能が必要になるまでは単一ユーザー構成を維持する
 - 実装方針（2026-02-07）
   - クライアントは `ApiRepository` を利用する
@@ -52,6 +56,7 @@ flowchart TD
   - 運用時の切り替えは `NEXT_PUBLIC_REPOSITORY_DRIVER` で行う（`supabase` / `local`）
 
 ## 4. 環境変数
+
 - 設定ファイルは `front/.env.local` を利用する
 - 共有テンプレートは `front/.env.example` に保持する
 - 想定キー
@@ -65,6 +70,7 @@ flowchart TD
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリの `.env.local` では管理しない（Supabase Auth プロジェクト側で管理）
 
 ## 5. Supabase + Prisma スキーマ同期フロー（チーム連携）
+
 - 前提
   - Supabase DB / Auth は既存プロジェクトを利用する
 - このリポジトリ側の実施内容
@@ -85,6 +91,7 @@ flowchart TD
   - 例外: IT / E2E のテスト用**使い捨て Postgres コンテナ**への `db push` は許可（共有 DB には接続しない。`docs/08-test-specification.md`・`.claude/rules/database.md`）
 
 ## 6. デプロイ / CI
+
 - デプロイ先は Vercel。
 - `front/vercel.json` の `ignoreCommand`（`scripts/vercel-ignore-docs.sh`）で、`docs/` のみ変更されたコミットは Vercel ビルドをスキップする。`front/` 配下やその他ファイルの変更がある場合は通常どおりビルドする。
 - GitHub Actions（`.github/workflows/ci.yml`）は `docs/**` / `*.md` のみの変更時に CI をスキップする。

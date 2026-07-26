@@ -5,6 +5,8 @@ globs: ".github/workflows/**"
 
 # GitHub Actions の発火ルール
 
+本ルールの実装は `.github/workflows/ci.yml`。markdownlint の対象・有効ルールは `.markdownlint-cli2.jsonc` を単一の真実とする（ローカル実行と CI で同じ設定が効く）。
+
 **「変更した内容に関係のあるジョブだけを動かす」** を原則とする。ドキュメントやルールの更新でテスト・ビルド・デプロイを回さない（CI 時間・コストの浪費、キュー待ちによる他 PR のブロック、無意味なデプロイの発生を防ぐ）。
 
 ## トリガの基本形

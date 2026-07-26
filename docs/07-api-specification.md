@@ -13,9 +13,11 @@
 - [4. HTTP エンドポイント（`supabase` モード）](#4-http-エンドポイントsupabase-モード)
 
 ## 1. 目的
+
 - `supabase` / `local` の両モードで共通利用するデータアクセス契約を定義する
 
 ## 2. 必須 Repository インターフェース
+
 - `listBooks(): Promise<Book[]>`
 - `getBook(bookId: string): Promise<Book | null>`
 - `listProgressLogs(bookId: string): Promise<ProgressLog[]>`
@@ -28,6 +30,7 @@
 データ型定義は `docs/05-data-specification.md` を参照する。
 
 ## 3. エラー契約
+
 - バリデーション違反は業務エラーとして扱い、画面に表示可能なメッセージを返す
 - `local` モードでデータ破損時は復旧処理を優先し、アプリ全体をクラッシュさせない
 - HTTP エラーは `{ message }` 形式の JSON で返す（例: `400` 不正リクエスト、`401` 未認証、`404` 未検出、`500` 内部エラー）

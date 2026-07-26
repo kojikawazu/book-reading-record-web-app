@@ -21,11 +21,13 @@
 - [8. 拡張方針](#8-拡張方針)
 
 ## 1. 目的
+
 - 読書記録アプリのデータ構造と永続化仕様（`supabase` / `local`）を定義する
 
 ## 2. データモデル
 
 ### 2.1 Book
+
 - `id: string`
 - `title: string`
 - `author: string`
@@ -45,6 +47,7 @@
   - ユーザーIDやプロフィール情報はMVPでは保持しない
 
 ### 2.2 ProgressLog
+
 - `id: string`
 - `bookId: string`
 - `page: number`
@@ -53,12 +56,14 @@
 - `loggedAt: string` (ISO 8601)
 
 ### 2.3 Reflection
+
 - `learning: string`
 - `action: string`
 - `quote: string`
 - `createdAt: string` (ISO 8601)
 
 ### 2.4 StoragePayload（`local` モード専用）
+
 - `version: number`
 - `books: Book[]`
 - `progressLogs: ProgressLog[]`
@@ -107,13 +112,16 @@ erDiagram
 - `supabase` モードの物理テーブルは §7 を参照。
 
 ## 3. データ使用方針
+
 - 扱うデータ: 書籍情報、進捗記録、感想
 - 画面は `BookRepository` を通じてデータへアクセスする
 - `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` の場合は `/api/book-record/*` 経由で Supabase DB を利用する
 - `NEXT_PUBLIC_REPOSITORY_DRIVER=local` の場合はブラウザ `localStorage` を利用する
 
 ## 4. 永続化モード
+
 ### 4.1 `supabase` モード（通常運用）
+
 - 保存先: Supabase PostgreSQL（`BookRecord*` テーブル）
 - 参照実装:
   - `ApiRepository`（クライアント）
@@ -124,6 +132,7 @@ erDiagram
   - 更新系はBearerトークン必須
 
 ### 4.2 `local` モード（E2E / ローカル受け入れ）
+
 - 保存先: `localStorage`
 - 保存キー: `book-reading-record.v1`
 - 初期値:
@@ -134,18 +143,21 @@ erDiagram
   - ユーザーが削除するまで無期限
 
 ## 5. データ破損と復旧（`local` モード）
+
 - JSON parse失敗時は破損データとして扱う
 - 破損データは `book-reading-record.v1.bak.<timestamp>` に退避する
 - 退避後、初期値で再初期化して起動する
 - UIに「復旧メッセージ」を表示する
 
 ## 6. バージョン移行（`local` モード）
+
 - `StoragePayload.version` でスキーマ判定する
 - 自動移行不可の場合:
   - バックアップ退避
   - 初期値で再初期化
 
 ## 7. DBスキーマ（`supabase` モード）
+
 - Prisma スキーマ定義は `front/prisma/schema.prisma` を正とする。
 - 物理テーブル名は `BookRecord` 接頭辞を付与する。
   - `BookRecordBooks`（model `BookRecordBook`）
@@ -154,5 +166,6 @@ erDiagram
 - スキーマ同期フロー（`db pull` 運用）は `docs/09-architecture-specification.md` を参照する。
 
 ## 8. 拡張方針
+
 - `supabase` / `local` のどちらでも `Book` / `ProgressLog` / `Reflection` の論理モデルは維持する
 - 既存ローカルデータのインポートは別タスクで設計する
