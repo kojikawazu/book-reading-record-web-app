@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CreateProgressLogInput } from "@/lib/types";
+import { CreateProgressLogInput } from "@/types/book";
 import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,

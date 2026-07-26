@@ -1,4 +1,4 @@
-import { BookStatus, ReflectionInput } from "./types";
+import { BookStatus, ReflectionInput } from "@/types/book";
 
 /** フィールド名 → エラーメッセージ（先頭1件）のマップ。空なら検証成功。 */
 export type ValidationErrors = Record<string, string>;

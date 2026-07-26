@@ -1,4 +1,4 @@
-import { BookRepository } from "./repository";
+import { BookRepository } from "@/repositories/repository";
 import {
   Book,
   CreateBookInput,
@@ -6,8 +6,8 @@ import {
   ProgressLog,
   ReflectionInput,
   UpdateBookInput,
-} from "./types";
-import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "./supabase/client";
+} from "@/types/book";
+import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "@/lib/supabase/client";
 
 /** API エラーレスポンスの想定形（`{ message }`）。 */
 type ApiError = {

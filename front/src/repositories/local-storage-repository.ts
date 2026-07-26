@@ -1,4 +1,4 @@
-import { BookRepository } from "./repository";
+import { BookRepository } from "@/repositories/repository";
 import {
   Book,
   CreateBookInput,
@@ -7,15 +7,15 @@ import {
   ReflectionInput,
   StoragePayload,
   UpdateBookInput,
-} from "./types";
+} from "@/types/book";
 import {
   createId,
   parseStoragePayload,
   persistStoragePayload,
   sortBooks,
   sortLogsDesc,
-} from "./helpers";
-import { validateReflection } from "./validation";
+} from "@/lib/helpers";
+import { validateReflection } from "@/validation/book";
 
 // 現在時刻の ISO 文字列。
 const nowIso = (): string => new Date().toISOString();

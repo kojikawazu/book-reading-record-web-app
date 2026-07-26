@@ -6,12 +6,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
-import { FORMAT_LABELS, STATUS_LABELS } from "@/lib/constants";
+import { FORMAT_LABELS, STATUS_LABELS } from "@/constants/book";
 import { reflectionIsMissing } from "@/lib/helpers";
-import { repository } from "@/lib/repository-instance";
-import { Book, BookStatus, ProgressLog } from "@/lib/types";
-import { useAuthSession } from "@/lib/use-auth-session";
-import { validateProgressForm, ValidationErrors } from "@/lib/validation";
+import { repository } from "@/repositories/repository-instance";
+import { Book, BookStatus, ProgressLog } from "@/types/book";
+import { useAuthSession } from "@/hooks/use-auth-session";
+import { validateProgressForm, ValidationErrors } from "@/validation/book";
 
 /**
  * 進捗率（%・小数第1位四捨五入）を求める。総ページが 0 以下なら 0 を返す。

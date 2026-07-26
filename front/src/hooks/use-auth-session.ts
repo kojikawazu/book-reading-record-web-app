@@ -2,8 +2,8 @@
 
 import { Session } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
-import { repositoryDriver } from "./repository-instance";
-import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "./supabase/client";
+import { repositoryDriver } from "@/repositories/repository-instance";
+import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "@/lib/supabase/client";
 
 /** useAuthSession が返す認証状態。 */
 type AuthSessionState = {

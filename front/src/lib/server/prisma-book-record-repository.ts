@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { BookRecordBook, BookRecordProgressLog, BookRecordReflection } from "@prisma/client";
-import { BookRepository } from "@/lib/repository";
+import { BookRepository } from "@/repositories/repository";
 import {
   Book,
   BookFormat,
@@ -12,8 +12,8 @@ import {
   Reflection,
   ReflectionInput,
   UpdateBookInput,
-} from "@/lib/types";
-import { validateReflection } from "@/lib/validation";
+} from "@/types/book";
+import { validateReflection } from "@/validation/book";
 import { prisma } from "./prisma-client";
 
 const BOOK_STATUS_VALUES: BookStatus[] = ["not_started", "reading", "paused", "completed"];

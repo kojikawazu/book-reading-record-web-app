@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ReflectionInput } from "@/lib/types";
+import { ReflectionInput } from "@/types/book";
 import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,

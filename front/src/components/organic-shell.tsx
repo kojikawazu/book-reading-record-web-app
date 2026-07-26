@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useMemo, useState } from "react";
-import { useAuthSession } from "@/lib/use-auth-session";
+import { useAuthSession } from "@/hooks/use-auth-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 /** サイドバー/モバイルナビの共通メニュー定義。 */

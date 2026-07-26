@@ -21,7 +21,7 @@ globs: "front/src/**"
 **原則 `type` を使う。** 以下の 2 条件のいずれかに当たる場合のみ `interface` を使う。
 
 - **条件 1: class 契約** — その型を **class が `implements` / `extends` する**
-  - 本プロジェクトの `BookRepository`（`lib/repository.ts`）が該当。`LocalStorageRepository` / `ApiRepository` / `PrismaBookRecordRepository` が実装する契約であるため `interface` を使う
+  - 本プロジェクトの `BookRepository`（`repositories/repository.ts`）が該当。`LocalStorageRepository` / `ApiRepository` / `PrismaBookRecordRepository` が実装する契約であるため `interface` を使う
 - **条件 2: 宣言マージが必要** — 型を**後から拡張する**必要がある
   - ライブラリ型・グローバル型の拡張（`declare global { interface Window { ... } }`）
   - `type` は宣言マージできないため、ここは `interface` でしか実現できない
@@ -48,7 +48,7 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 
 ## スキーマバリデーション
 
-**現状、本プロジェクトはスキーマバリデーションライブラリを導入しておらず、`src/lib/validation.ts` の自前 `validate*` 関数で検証している。** この方針を維持する場合:
+**現状、本プロジェクトはスキーマバリデーションライブラリを導入しておらず、`src/validation/book.ts` の自前 `validate*` 関数で検証している。** この方針を維持する場合:
 
 - **検証ロジックは `validation.ts` に集約する**。Route Handler・コンポーネントに条件式を散らさない。
 - **クライアントとサーバーで同じ `validate*` 関数を呼ぶ**。信頼境界が違うため検証自体は両方で必要だが、**ルールの定義は 1 つ**にする（`duplication.md`）。
@@ -67,17 +67,17 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 | 参照範囲 | 置き場所 |
 |---|---|
 | **1 ファイルに閉じる** | その定義ファイル内にコロケーション（`export` しない） |
-| **2 ファイル以上** / レイヤ・機能をまたぐ | `lib/types.ts` に集約して `export` |
+| **2 ファイル以上** / レイヤ・機能をまたぐ | `src/types/` に集約して `export` |
 
 ### 運用ルール
 
-- **最初から `lib/types.ts` に置かない。** まず定義ファイル内に書き、**2 箇所目の参照が発生した時点で昇格**させる。先回りの集約は、使われない共通型と不要な依存を増やす。
+- **最初から `src/types/` に置かない。** まず定義ファイル内に書き、**2 箇所目の参照が発生した時点で昇格**させる。先回りの集約は、使われない共通型と不要な依存を増やす。
 - **昇格時は元ファイルに型を残さない**（re-export も含む）。定義は常に 1 箇所。
-- `lib/types.ts` が肥大化したらドメイン単位でファイルを分ける（`lib/types/book.ts` 等）。その際も **barrel（`index.ts` からの一括 re-export）は作らない**。循環参照・バンドル肥大・tree-shaking 阻害の原因になる。実ファイルを直接 import する。
+- **`src/types/` はドメイン単位でファイルを分ける**（現在は `types/book.ts`）。1 ファイルに全ドメインを詰めない。**barrel（`index.ts` からの一括 re-export）は作らない**。循環参照・バンドル肥大・tree-shaking 阻害の原因になるため、実ファイルを直接 import する。
 
 ### 分類の目安
 
-- **`lib/types.ts` に置く**: API レスポンス/リクエスト型、ドメインエンティティ（`Book` / `ProgressLog` / `Reflection`）、複数画面で共有する union リテラル
+- **`src/types/` に置く**: API レスポンス/リクエスト型、ドメインエンティティ（`Book` / `ProgressLog` / `Reflection`）、複数画面で共有する union リテラル
 - **コロケーションのまま**: コンポーネントの props 型（コンポーネントと 1:1 で、UI の変更と同時に変わる）、そのファイル内でしか使わない内部型
 
 ### 型へのコメント
@@ -93,27 +93,28 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 | 参照範囲 | 置き場所 |
 |---|---|
 | **1 ファイルに閉じる** | その定義ファイルの先頭で `const` 宣言（`export` しない） |
-| **2 ファイル以上** / レイヤ・機能をまたぐ | `lib/constants.ts` に集約して `export` |
+| **2 ファイル以上** / レイヤ・機能をまたぐ | `src/constants/` に集約して `export` |
 
 ### 運用ルール
 
-- **`lib/helpers.ts` に定数を混ぜない。** 「関数の置き場」と「値の置き場」を分けると、変更時に探す範囲が狭まる。
-- 昇格の運用は型と同じ: まず使う場所に書き、**2 箇所目の参照が発生した時点で `constants.ts` へ移す**。移動時は元ファイルに残さない（re-export も含む）。
+- **`src/lib/helpers.ts` に定数を混ぜない。** 「関数の置き場」と「値の置き場」を分けると、変更時に探す範囲が狭まる。
+- 昇格の運用は型と同じ: まず使う場所に書き、**2 箇所目の参照が発生した時点で `src/constants/` へ移す**。移動時は元ファイルに残さない（re-export も含む）。
+- **`src/constants/` もドメイン単位でファイルを分ける**（現在は表示ラベル等の `constants/book.ts` と localStorage 関連の `constants/storage.ts`）。
 - **`as const` を付ける。** 付けないとリテラル型が `string` / `number` に広がり、union の導出や補完が効かなくなる。
 - 命名は `UPPER_SNAKE_CASE`。オブジェクト定数のキーも同様に揃える。
 
 ### 型の元になる定数は「型と同じファイル」に置く
 
-union リテラルの元になる配列・オブジェクトは、**導出される型とセットで `lib/types.ts` 側に置く**。`constants.ts` と `types.ts` に分けると、値と型が常に往復参照になり、片方だけ更新される事故が起きる。
+union リテラルの元になる配列・オブジェクトは、**導出される型とセットで `src/types/` 側に置く**。`constants/` と `types/` に分けると、値と型が常に往復参照になり、片方だけ更新される事故が起きる。
 
 ```ts
-// lib/types.ts — 値と型はペアで同居させる
+// types/book.ts — 値と型はペアで同居させる
 /** 書籍の読書状態。表示順もこの配列の順序に従う。 */
 export const BOOK_STATUSES = ['unread', 'reading', 'finished'] as const;
 /** 書籍の読書状態。完読判定は進捗ページ数と総ページ数の一致で決まる */
 export type BookStatus = (typeof BOOK_STATUSES)[number];
 
-// lib/constants.ts — 型を導出しない純粋な値はこちら
+// constants/book.ts — 型を導出しない純粋な値はこちら
 /** 週次集計の対象期間（日数）。docs/03 の業務ルールに従う */
 export const WEEKLY_SUMMARY_DAYS = 7;
 ```
@@ -151,7 +152,7 @@ type Status = (typeof STATUSES)[number];
 - 理由: バンドラ／トランスパイラが型を確実に消せる、副作用のない循環参照を避けられる。`verbatimModuleSyntax` 有効化を推奨。
 
 ```ts
-import type { Book } from '@/lib/types';
+import type { Book } from '@/types/book';
 import { sortBooks } from '@/lib/helpers';
 ```
 

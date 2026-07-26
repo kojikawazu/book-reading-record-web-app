@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { OrganicShell } from "@/components/organic-shell";
-import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/lib/constants";
+import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/constants/book";
 import { computeWeeklySummary } from "@/lib/helpers";
-import { repository } from "@/lib/repository-instance";
-import { Book, BookStatus, ProgressLog } from "@/lib/types";
+import { repository } from "@/repositories/repository-instance";
+import { Book, BookStatus, ProgressLog } from "@/types/book";
 
 /**
  * 比率（0〜1）をパーセント（小数第1位四捨五入）へ変換する。

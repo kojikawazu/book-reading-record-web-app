@@ -64,7 +64,7 @@ NEXT_PUBLIC_REPOSITORY_DRIVER=local pnpm dev
 
 → ブラウザで http://localhost:3000
 
-> 環境変数が未設定でも自動的に `local` モードで起動します（`front/src/lib/repository-instance.ts`）。まず触ってみるならこの方法が確実です。
+> 環境変数が未設定でも自動的に `local` モードで起動します（`front/src/repositories/repository-instance.ts`）。まず触ってみるならこの方法が確実です。
 
 ## データ保存モード
 

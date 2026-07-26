@@ -1,6 +1,6 @@
 import { beforeEach, describe, it, expect } from "vitest";
-import { LocalStorageRepository } from "@/lib/local-storage-repository";
-import { CreateBookInput } from "@/lib/types";
+import { LocalStorageRepository } from "@/repositories/local-storage-repository";
+import { CreateBookInput } from "@/types/book";
 
 const baseInput: CreateBookInput = {
   title: "  リーダブルコード  ",

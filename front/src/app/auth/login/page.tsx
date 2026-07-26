@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseAuthConfigured } from "@/lib/supabase/client";
-import { repositoryDriver } from "@/lib/repository-instance";
+import { repositoryDriver } from "@/repositories/repository-instance";
 
 /**
  * `?next=` の遷移先を検証する。相対パス（"/" 始まり）以外はオープンリダイレクトを避けて "/" に丸める。
