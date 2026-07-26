@@ -4,7 +4,9 @@
 
 ## Rules
 
-明示的な指示がなくても、`.claude/rules/` 内のルールを常に守ってください。
+明示的な指示がなくても、`.claude/rules/` 内のルールを**スコープに関わらず常に守ってください**。下表のスコープは「主にどの領域の話か」を示す索引であり、適用範囲を絞るものではありません。
+
+**対象パスの詳細は各ルールファイルの `globs`（frontmatter）を正とします。** ここにパスを再掲すると二重管理になり、片方だけ更新される事故が起きるためです（`duplication.md`）。
 
 | ファイル | スコープ | 内容 |
 |---------|---------|------|
@@ -14,19 +16,19 @@
 | documentation.md | 全体 | ドキュメント更新ルール |
 | git.md | 全体 | GitHub Flow・ブランチ命名・push 禁止物 |
 | github-issue.md | 全体 | GitHub issue 運用（ブランチと対で起票・open/close で進捗管理・サブ issue） |
-| testing.md | 全体 | テスト分類・原則・3層(UT/IT/E2E)・モック/DBコンテナ方針 |
+| testing.md | 全体 | テスト分類・原則・3層(UT/IT/E2E)・モック/DBコンテナ方針・テスト配置 |
 | coding-standards.md | 全体 | コーディング規約（TypeScript strict・pnpm・ESLint/Prettier） |
 | duplication.md | 全体 | 重複と共通化の判断基準（同じ知識のみ共通化・3回目で共通化） |
 | static-analysis.md | 全体 | 静的解析の運用（Formatter/Linter の役割分担・CI 必須・警告ゼロ） |
 | dead-code.md | 全体 | デッドコード禁止（コメントアウト・未使用 export・スキップ放置テスト） |
-| github-actions.md | .github/workflows/** | CI の発火ルール（コードとドキュメントを別フィルタ・別ジョブ・必須チェックと paths-ignore を併用しない） |
-| typescript.md | front/src/** | TypeScript 固有規約（type/interface・型/定数の配置・any 禁止・import type） |
 | error-handling.md | 全体 | エラーハンドリング方針（バリデーション・HTTP ステータス・統一レスポンス） |
 | security.md | 全体 | セキュリティ共通方針（認証・通信・インジェクション・シークレット） |
-| jsdoc.md | front/src/** | JSDoc(TSDoc) 規約（公開シンボルに必須） |
-| frontend.md | front/src/app/**, components/**, lib/** | フロント設計（Repository パターン・server-first・ロジック分離） |
-| api.md | front/src/app/api/**, lib/server/** | Route Handlers（一体型 API・Prisma 委譲・認可） |
-| database.md | front/prisma/**, lib/server/** | Prisma（db pull 運用・BookRecord* 命名・RLS） |
+| github-actions.md | CI | CI の発火ルール（コードとドキュメントを別フィルタ・別ジョブ・必須チェックと paths-ignore を併用しない） |
+| typescript.md | TS コード | TypeScript 固有規約（type/interface・型/定数の配置・any 禁止・import type） |
+| jsdoc.md | TS コード | JSDoc(TSDoc) 規約（公開シンボルに必須・型定義のコメント） |
+| frontend.md | フロント | フロント設計（Repository パターン・server-first・レイヤ一方向依存・ロジック分離） |
+| api.md | API | Route Handlers（一体型 API・Prisma 委譲・認可・レスポンス整形） |
+| database.md | DB | Prisma（db pull 運用・BookRecord* 命名・共通フィールド・削除方針・RLS） |
 
 ## Docs
 
