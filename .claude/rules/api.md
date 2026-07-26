@@ -13,7 +13,7 @@ globs: "front/src/app/api/**,front/src/lib/server/**"
 
 ## ディレクトリ構成
 
-```
+```text
 src/app/api/book-record/
 ├── books/route.ts                     # GET 一覧 / POST 作成
 └── books/[id]/

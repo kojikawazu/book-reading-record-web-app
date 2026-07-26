@@ -1,21 +1,59 @@
 name: CI
 
+# 発火方針は .claude/rules/github-actions.md を正とする。
+#
+# ワークフローレベルの paths / paths-ignore は使わない。必須チェック（required status
+# check）に指定したジョブが「起動しない」と pending のまま完了せず、PR が永久にマージ
+# できなくなるため。代わりに changes ジョブで変更範囲を判定し、各ジョブは常に起動して
+# ジョブレベル if: で中身だけスキップする（skipped は必須チェックとして成功扱いになる）。
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - ".github/**/*.md"
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - ".github/**/*.md"
+    branches: [main]
+
+# 同一 PR への連続 push で古い実行をキャンセルする（CD を追加する際は false にすること）。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 既定の広い権限に依存せず、読み取りのみを明示する。
+permissions:
+  contents: read
 
 jobs:
+  # 変更範囲の判定。code / docs / workflows は独立した判定であり、排他ではない。
+  # 実装とドキュメントを同一 PR で更新する運用（.claude/rules/documentation.md）のため、
+  # code と docs が両方 true になる PR が正常系。
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      docs: ${{ steps.filter.outputs.docs }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # code は「除外リスト」で書く。対象リストにすると新しいディレクトリが増えた
+          # ときに黙ってテストが走らなくなるため、安全側に倒す。
+          # docs は逆に「対象リスト」。走りすぎても害が小さく、走らない方が問題になる。
+          filters: |
+            code:
+              - '!(docs/**|.claude/**|**/*.md|LICENSE)'
+            docs:
+              - 'docs/**'
+              - '.claude/**'
+              - '**/*.md'
+            workflows:
+              - '.github/workflows/**'
+
   # 静的ゲート: lint / 型 / フォーマット。最速で全 PR の門番になる。
   static:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,6 +89,8 @@ jobs:
 
   # UT（単体・jsdom・外部 I/O モック）。DB 不要で高速。
   ut:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,7 +113,10 @@ jobs:
         run: pnpm test
 
   # IT（結合・node・実 Postgres）。docker-compose.test.yml の使い捨てコンテナに対して実行する。
+  # 共有 Supabase プロジェクトには接続しない（.claude/rules/database.md）。
   it:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -108,6 +151,8 @@ jobs:
 
   # E2E / シナリオ（Playwright / Chromium・local レーン）。受け入れ Case 1-18。
   e2e:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -147,3 +192,42 @@ jobs:
           path: front/playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # ドキュメントレーン: markdown の構文検査とリンク切れ検査。
+  # テスト・ビルドは回さない（発火条件も実行内容もコードとは別物）。
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 対象・除外・有効ルールは .markdownlint-cli2.jsonc を単一の真実とする
+      # （ローカルの `pnpm dlx markdownlint-cli2` と CI で同じ設定が効くようにする）。
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+
+      # リンク切れは --offline で内部リンクのみ検査する。外部 URL を叩くと相手先の
+      # 一時的な障害やレート制限で CI が落ち、警告の常態化を招くため対象にしない。
+      # .claude/ は隠しディレクトリのため、glob を明示して検査対象に含める。
+      - name: Link check (internal only)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --offline --no-progress
+            '**/*.md' '.claude/**/*.md'
+          fail: true
+
+  # ワークフロー自身の検証。構文ミス・存在しない式を早期に検出する。
+  actionlint:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 公式のインストールスクリプトを使う（バージョンタグの推測を避ける）。
+      - name: Run actionlint
+        run: |
+          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color

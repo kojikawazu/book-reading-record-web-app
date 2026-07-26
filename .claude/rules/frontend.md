@@ -32,7 +32,7 @@ globs: "front/src/app/**,front/src/components/**,front/src/lib/**"
 
 **依存は上位から下位への一方向のみ**。下位レイヤが上位レイヤを import してはならない。
 
-```
+```text
 app/  →  components/  →  lib/（hooks・Repository・helpers）  →  lib/types.ts, lib/constants.ts
 （ルーティング・合成） （表示）        （ロジック・通信）                  （最下層）
 
