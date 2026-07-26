@@ -85,12 +85,14 @@ jobs:
         run: |
           set -euo pipefail
           files=$(git diff --name-only "$(git merge-base "$BASE_SHA" HEAD)" HEAD)
+          emit() {
+            if [ -n "$2" ]; then echo "$1=true" >> "$GITHUB_OUTPUT"
+            else echo "$1=false" >> "$GITHUB_OUTPUT"; fi
+          }
           docs_re='(^|/)[^/]*\.md$|^docs/|^\.claude/'
           # code は docs の否定（＝除外リスト方式）で求める
-          [ -n "$(printf '%s\n' "$files" | grep -vE "$docs_re" || true)" ] \
-            && echo "code=true"  >> "$GITHUB_OUTPUT" || echo "code=false" >> "$GITHUB_OUTPUT"
-          [ -n "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)" ] \
-            && echo "docs=true"  >> "$GITHUB_OUTPUT" || echo "docs=false" >> "$GITHUB_OUTPUT"
+          emit code "$(printf '%s\n' "$files" | grep -vE "$docs_re" || true)"
+          emit docs "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)"
 
   test:                         # コード変更時のみ中身を実行（必須チェック）
     needs: changes
@@ -113,6 +115,7 @@ jobs:
 - **base commit を解決できない場合（初回 push・force push 等）は、全ファイルが変更されたものとして扱う**。判定不能を「変更なし」に倒すと、検査が黙って飛ぶ。
 - **変更ファイル一覧をログ（`$GITHUB_STEP_SUMMARY`）に出す**。何がスキップされたか追えないと、スキップは「検査して通った」と見分けがつかない。
 - **判定ロジックを変えたら、スキップ経路を実際に踏む PR で確認する**。全ジョブが「起動して成功」しても、それは**スキップが効いていないことの証明にはならない**。
+- **`run:` のスクリプトは actionlint 経由で shellcheck にかけられる**。指摘は抑制せず直す（変数の間接参照は避ける・同一ファイルへの連続リダイレクトは `{ ... } >> file` でまとめる）。ローカルでは該当スクリプトを切り出して `shellcheck` を通せる。
 - 必須チェックにしないワークフロー（デプロイ等）は、ワークフローレベルの `paths-ignore` を使ってよい（起動そのものを止める方が安価）。
 
 ## デプロイの発火

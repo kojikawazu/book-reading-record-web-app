@@ -58,29 +58,31 @@ jobs:
             files=$(git diff --name-only "$(git merge-base "$BASE_SHA" HEAD)" HEAD)
           fi
 
-          echo "## 変更ファイル" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "$files" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 変更ファイル"
+            echo '```'
+            echo "$files"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # 名前と「マッチした行」を受け取り、有無を true/false として出力する。
+          emit() {
+            if [ -n "$2" ]; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+              echo "$1: true"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+              echo "$1: false"
+            fi
+          }
 
           # ドキュメント扱いするパス。code はこの否定（＝除外リスト方式）で求めるため、
           # 新しいディレクトリが増えても黙ってテストが止まることはない。
           docs_re='(^|/)[^/]*\.md$|^docs/|^\.claude/'
 
-          code=$(printf '%s\n' "$files" | grep -vE "${docs_re}|^LICENSE$" || true)
-          docs=$(printf '%s\n' "$files" | grep -E "$docs_re" || true)
-          workflows=$(printf '%s\n' "$files" | grep -E '^\.github/workflows/' || true)
-
-          for name in code docs workflows; do
-            eval "value=\${$name}"
-            if [ -n "$value" ]; then
-              echo "${name}=true" >> "$GITHUB_OUTPUT"
-              echo "${name}: true"
-            else
-              echo "${name}=false" >> "$GITHUB_OUTPUT"
-              echo "${name}: false"
-            fi
-          done
+          emit code      "$(printf '%s\n' "$files" | grep -vE "${docs_re}|^LICENSE$" || true)"
+          emit docs      "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)"
+          emit workflows "$(printf '%s\n' "$files" | grep -E  '^\.github/workflows/' || true)"
 
   # 静的ゲート: lint / 型 / フォーマット。最速で全 PR の門番になる。
   static:
