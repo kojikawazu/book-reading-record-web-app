@@ -59,29 +59,38 @@ globs: ".github/workflows/**"
 - **ドキュメント変更 → markdown lint / リンク切れチェック**（テスト・ビルドは不要）
 - **両方を含む PR → 両方が走る**。片方の判定がもう片方を抑制してはならない。
 
+**判定は glob マッチャに任せず、変更ファイル一覧への明示的なパターン照合で行う。**
+
+`dorny/paths-filter` は**フィルタ内の複数パターンを OR で評価する**ため、「`docs/` でも `.claude/` でも `*.md` でもない」という **AND 条件を表現できない**。単一の extglob `!(docs/**|**/*.md|.claude/**)` は **`/` を跨げない**ため、`.claude/rules/api.md` や `README.md` が除外されず、ドキュメントだけの PR でもコードレーンが起動する（本リポジトリで実際に発生した）。
+
 ```yaml
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  changes:                      # 変更範囲を判定する（フィルタは用途ごとに独立させる）
+  changes:                      # 変更範囲を判定する（判定は用途ごとに独立させる）
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            code:
-              - '!(docs/**|**/*.md|.claude/**|LICENSE)'
-            docs:
-              - 'docs/**'
-              - '**/*.md'
-              - '.claude/**'
+          fetch-depth: 0        # merge-base の算出に全履歴が要る
+      - id: filter
+        env:
+          # ${{ }} を run: に直接埋め込まない（コマンドインジェクション対策）
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          files=$(git diff --name-only "$(git merge-base "$BASE_SHA" HEAD)" HEAD)
+          docs_re='(^|/)[^/]*\.md$|^docs/|^\.claude/'
+          # code は docs の否定（＝除外リスト方式）で求める
+          [ -n "$(printf '%s\n' "$files" | grep -vE "$docs_re" || true)" ] \
+            && echo "code=true"  >> "$GITHUB_OUTPUT" || echo "code=false" >> "$GITHUB_OUTPUT"
+          [ -n "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)" ] \
+            && echo "docs=true"  >> "$GITHUB_OUTPUT" || echo "docs=false" >> "$GITHUB_OUTPUT"
 
   test:                         # コード変更時のみ中身を実行（必須チェック）
     needs: changes
@@ -99,8 +108,11 @@ jobs:
 ```
 
 - **`code` と `docs` は排他ではない**。両方 `true` になる PR（実装 + ドキュメント更新）が正常系であり、`if/else` 的な二者択一で書かない。`.claude/rules/documentation.md` は「コード変更とドキュメント更新を同一 PR で行う」ことを完了条件としているため、**両方走る PR が最も多くなる**。
-- **`code` フィルタは「除外リスト」で書く**（`docs/**` 等以外はコード変更とみなす）。「対象リスト」で書くと、**新しいディレクトリが増えたときに黙ってテストが走らなくなる**。安全側に倒す。
-- 逆に **`docs` フィルタは「対象リスト」で書く**。ドキュメント検査は走りすぎても害が小さく、走らない方が問題になるため、判断の向きがコードとは逆になる。
+- **`code` は「除外リストの否定」で求める**（`docs/` 等以外はコード変更とみなす）。「対象リスト」で書くと、**新しいディレクトリが増えたときに黙ってテストが走らなくなる**。安全側に倒す。
+- 逆に **`docs` は「対象リスト」で書く**。ドキュメント検査は走りすぎても害が小さく、走らない方が問題になるため、判断の向きがコードとは逆になる。
+- **base commit を解決できない場合（初回 push・force push 等）は、全ファイルが変更されたものとして扱う**。判定不能を「変更なし」に倒すと、検査が黙って飛ぶ。
+- **変更ファイル一覧をログ（`$GITHUB_STEP_SUMMARY`）に出す**。何がスキップされたか追えないと、スキップは「検査して通った」と見分けがつかない。
+- **判定ロジックを変えたら、スキップ経路を実際に踏む PR で確認する**。全ジョブが「起動して成功」しても、それは**スキップが効いていないことの証明にはならない**。
 - 必須チェックにしないワークフロー（デプロイ等）は、ワークフローレベルの `paths-ignore` を使ってよい（起動そのものを止める方が安価）。
 
 ## デプロイの発火
