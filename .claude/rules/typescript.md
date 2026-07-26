@@ -82,7 +82,7 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 
 ### 型へのコメント
 
-`type` / `interface` は**型本体・各メンバーともにコメント必須**。詳細は `jsdoc.md`（必須対象・記述ルール）に従う。
+`type` / `interface` は**型本体・各メンバーともにコメント必須**。何を書くか（単位・省略の意味・不変条件・union 各値の状態）は `jsdoc.md`「型定義のコメント」に従う。
 
 ## 定数の配置
 
