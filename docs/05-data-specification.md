@@ -18,7 +18,8 @@
 - [5. データ破損と復旧（`local` モード）](#5-データ破損と復旧local-モード)
 - [6. バージョン移行（`local` モード）](#6-バージョン移行local-モード)
 - [7. DBスキーマ（`supabase` モード）](#7-dbスキーマsupabase-モード)
-- [8. 拡張方針](#8-拡張方針)
+- [8. 削除方針](#8-削除方針)
+- [9. 拡張方針](#9-拡張方針)
 
 ## 1. 目的
 
@@ -164,8 +165,17 @@ erDiagram
   - `BookRecordProgressLogs`（model `BookRecordProgressLog`）
   - `BookRecordReflections`（model `BookRecordReflection`）
 - スキーマ同期フロー（`db pull` 運用）は `docs/09-architecture-specification.md` を参照する。
+- 共有 Supabase プロジェクトを他プロジェクトと共用しているため、`db pull` すると**他プロジェクトのテーブルも `schema.prisma` に含まれる**（現在 12 モデル中 9 モデル）。`BookRecord` 接頭辞はその名前空間の分離手段であり、他プロジェクトのモデルは編集・削除しない。
 
-## 8. 拡張方針
+## 8. 削除方針
+
+- **論理削除（ソフトデリート）は採用せず、物理削除とする。** `deletedAt` 相当のフィールドは持たない。
+- `BookRecordBook` を削除すると、関連する `BookRecordProgressLog` / `BookRecordReflection` は `onDelete: Cascade` により同時に削除される。
+- 理由: 単一ユーザー向け MVP であり、削除の取り消し・監査要件が無い。論理削除は全読み取りクエリへの除外条件付与を要求し、付け忘れが情報漏洩に直結する。
+- `local` モードでも同様に、`StoragePayload` から対象レコードと関連レコードを取り除く。
+- 方針を変更する場合は本節と `.claude/rules/database.md` を先に更新する（テーブルごとに削除の意味が変わる状態を作らない）。
+
+## 9. 拡張方針
 
 - `supabase` / `local` のどちらでも `Book` / `ProgressLog` / `Reflection` の論理モデルは維持する
 - 既存ローカルデータのインポートは別タスクで設計する
