@@ -11,15 +11,15 @@ export type BookFormat = "paper" | "ebook" | "audio";
  * 完読時の感想。学び / 行動 / 一文はいずれも空入力可で、
  * 3項目すべてが空（trim 後）なら「感想未記入」として扱う（helpers.reflectionIsMissing）。
  */
-export interface Reflection {
+export type Reflection = {
   learning: string;
   action: string;
   quote: string;
   createdAt: string;
-}
+};
 
 /** 書籍1冊のドメインモデル。`local` / `supabase` の両モードで共通の論理形。 */
-export interface Book {
+export type Book = {
   id: string;
   title: string;
   author: string;
@@ -36,30 +36,30 @@ export interface Book {
   completedAt?: string;
   /** 完読時感想。再読しても保持する（初期化しない）。 */
   reflection?: Reflection;
-}
+};
 
 /** 進捗記録1件。追記のみで更新・削除しない（進捗履歴）。 */
-export interface ProgressLog {
+export type ProgressLog = {
   id: string;
   bookId: string;
   page: number;
   memo?: string;
   status: BookStatus;
   loggedAt: string;
-}
+};
 
 /**
  * `local` モードで localStorage に保存する永続化ペイロード。
  * `version` はスキーマ判定に使い、不一致・破損時は初期化する（helpers.parseStoragePayload）。
  */
-export interface StoragePayload {
+export type StoragePayload = {
   version: number;
   books: Book[];
   progressLogs: ProgressLog[];
-}
+};
 
 /** 書籍作成の入力。初期ステータスに `completed` は指定できない（型で除外）。 */
-export interface CreateBookInput {
+export type CreateBookInput = {
   title: string;
   author: string;
   genre?: string;
@@ -67,10 +67,10 @@ export interface CreateBookInput {
   totalPages: number;
   tags: string[];
   status: Exclude<BookStatus, "completed">;
-}
+};
 
 /** 書籍更新の入力。指定したフィールドのみ部分更新する（再読・完読の状態変更を含む）。 */
-export interface UpdateBookInput {
+export type UpdateBookInput = {
   title?: string;
   author?: string;
   genre?: string;
@@ -82,26 +82,26 @@ export interface UpdateBookInput {
   /** 明示的に undefined を渡すと完読解除（再読）を表現する。 */
   completedAt?: string | undefined;
   reflection?: Reflection;
-}
+};
 
 /** 進捗記録の入力。`loggedAt` 省略時は現在時刻を記録日とする。 */
-export interface CreateProgressLogInput {
+export type CreateProgressLogInput = {
   page: number;
   memo?: string;
   status: BookStatus;
   loggedAt?: string;
-}
+};
 
 /** 感想保存の入力（3項目とも空入力可）。 */
-export interface ReflectionInput {
+export type ReflectionInput = {
   learning: string;
   action: string;
   quote: string;
-}
+};
 
 /** 直近7日（当日含む）の週次集計結果。 */
-export interface WeeklySummary {
+export type WeeklySummary = {
   readPages: number;
   progressCount: number;
   reflectionCount: number;
-}
+};
