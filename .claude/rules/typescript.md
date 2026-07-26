@@ -73,7 +73,7 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 
 - **最初から `src/types/` に置かない。** まず定義ファイル内に書き、**2 箇所目の参照が発生した時点で昇格**させる。先回りの集約は、使われない共通型と不要な依存を増やす。
 - **昇格時は元ファイルに型を残さない**（re-export も含む）。定義は常に 1 箇所。
-- **`src/types/` はドメイン単位でファイルを分ける**（現在は `types/book.ts`）。1 ファイルに全ドメインを詰めない。**barrel（`index.ts` からの一括 re-export）は作らない**。循環参照・バンドル肥大・tree-shaking 阻害の原因になるため、実ファイルを直接 import する。
+- **`src/types/` はドメイン単位でファイルを分ける**（現在は `types/book.ts`）。1 ファイルに全ドメインを詰めない。**`src/types.ts` / `lib/type.ts` のように 1 ファイルへ全型を詰め込む形にしない**（必ずディレクトリを切る）。命名は**ディレクトリが複数形の `types`、ファイルはドメイン名の単数形**（`types/book.ts`）。**barrel（`index.ts` からの一括 re-export）は作らない**。循環参照・バンドル肥大・tree-shaking 阻害の原因になるため、実ファイルを直接 import する。
 
 ### 分類の目安
 
@@ -97,9 +97,10 @@ type BookCardProps = { book: Book; onSelect: (id: string) => void };
 
 ### 運用ルール
 
+- **`src/lib/` や `src/utils/` の下に型・定数のファイルを置かない。** `lib/` は「関数の置き場」、`types/` は「型の置き場」、`constants/` は「値の置き場」で分離する。
 - **`src/lib/helpers.ts` に定数を混ぜない。** 「関数の置き場」と「値の置き場」を分けると、変更時に探す範囲が狭まる。
 - 昇格の運用は型と同じ: まず使う場所に書き、**2 箇所目の参照が発生した時点で `src/constants/` へ移す**。移動時は元ファイルに残さない（re-export も含む）。
-- **`src/constants/` もドメイン単位でファイルを分ける**（現在は表示ラベル等の `constants/book.ts` と localStorage 関連の `constants/storage.ts`）。
+- **`src/constants/` もドメイン単位でファイルを分ける**（現在は表示ラベル等の `constants/book.ts` と localStorage 関連の `constants/storage.ts`）。型と同じく **`src/constants.ts` の 1 ファイルにまとめない**。命名はディレクトリが複数形の `constants`、ファイルはドメイン名の単数形。
 - **`as const` を付ける。** 付けないとリテラル型が `string` / `number` に広がり、union の導出や補完が効かなくなる。
 - 命名は `UPPER_SNAKE_CASE`。オブジェクト定数のキーも同様に揃える。
 

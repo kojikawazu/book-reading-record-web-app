@@ -61,6 +61,17 @@ globs: "front/prisma/**,front/src/lib/server/**"
 - **追記専用テーブルは `createdAt` / `updatedAt` を持たなくてよい**。`BookRecordProgressLog` は進捗の追記のみで更新・削除しないため、**記録時刻を表す `loggedAt` だけを持つ**。これは漏れではなく意図的な設計であり、同種のテーブルを追加する場合も同じ扱いでよい。
 - 状態の到達時刻など**業務上の意味を持つ日時**は、共通フィールドとは別に定義する（例: `BookRecordBook.completedAt` は完読日時であり、`updatedAt` とは意味が異なる）。
 
+## 監査列の設定（アプリケーションコードで組み立てない）
+
+監査列（`createdAt` / `updatedAt`）は **Prisma の機構で自動設定する**。リポジトリ層で値を書かない。
+
+- **手動代入を禁止する。** `data: { updatedAt: new Date() }` のように監査列へ値を書かない。`updatedAt` の手動指定は **`@updatedAt` の自動更新を上書きしてしまう**。
+- 日時は**スキーマ側で宣言する**: `createdAt DateTime @default(now())` / `updatedAt DateTime @updatedAt`（`BookRecord*` は宣言済み）。
+- **`createdAt` は更新しない。** 更新系の `data` に `createdAt` を含めない。`create` 側でも `@default(now())` があるため明示不要。
+- **親レコードの `updatedAt` を更新したい場合**（子の変更に追随させる等）も `updatedAt: new Date()` を書かない。更新対象のフィールドを含む `update` を発行すれば `@updatedAt` が発火する。フィールドを変えずに時刻だけ進める必要があるなら、**その意図と手段をコメントで残す**（何もしない `update` が意図どおり動くかは Prisma のバージョン依存のため、テストで固定する）。
+- **例外**: シードデータ・テストで日時を固定したい場合のみ明示指定を許容する。本番コードパスには持ち込まない。
+- `createdBy` / `updatedBy` は現在どのモデルにも存在しない。導入する場合は各ユースケースで詰めず、**Prisma Client Extension（`$extends` の query フック）でリクエストコンテキストから自動注入する**。
+
 ## 削除方針（論理削除を採用しない）
 
 **論理削除（`deletedAt` によるソフトデリート）は採用しない。** 現在、全 12 モデルに `deletedAt` は存在しない。
