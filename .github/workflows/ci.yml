@@ -33,22 +33,56 @@ jobs:
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          # code は「除外リスト」で書く。対象リストにすると新しいディレクトリが増えた
-          # ときに黙ってテストが走らなくなるため、安全側に倒す。
-          # docs は逆に「対象リスト」。走りすぎても害が小さく、走らない方が問題になる。
-          filters: |
-            code:
-              - '!(docs/**|.claude/**|**/*.md|LICENSE)'
-            docs:
-              - 'docs/**'
-              - '.claude/**'
-              - '**/*.md'
-            workflows:
-              - '.github/workflows/**'
+          # 変更ファイルの算出に merge-base が必要なため全履歴を取得する。
+          fetch-depth: 0
+
+      # 判定を glob マッチャに任せず、変更ファイル一覧への明示的なパターン照合で行う。
+      # dorny/paths-filter はパターンを OR で評価するため、「docs でも .claude でも
+      # *.md でもない」という AND 条件を表現できない（単一 extglob の !(a|b) は "/" を
+      # 跨げず、.claude/rules/*.md や README.md が除外されずコードレーンが起動した）。
+      - name: Detect changed areas
+        id: filter
+        env:
+          # ${{ }} を run: に直接埋め込まず env 経由で渡す（コマンドインジェクション対策）。
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # base が取得できない場合（初回 push・force push 等）は安全側に倒し、
+          # 全ファイルが変更されたものとして扱う。
+          if [ -z "${BASE_SHA:-}" ] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "base commit を解決できないため、全ファイルを対象とする"
+            files=$(git ls-files)
+          else
+            files=$(git diff --name-only "$(git merge-base "$BASE_SHA" HEAD)" HEAD)
+          fi
+
+          {
+            echo "## 変更ファイル"
+            echo '```'
+            echo "$files"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # 名前と「マッチした行」を受け取り、有無を true/false として出力する。
+          emit() {
+            if [ -n "$2" ]; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+              echo "$1: true"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+              echo "$1: false"
+            fi
+          }
+
+          # ドキュメント扱いするパス。code はこの否定（＝除外リスト方式）で求めるため、
+          # 新しいディレクトリが増えても黙ってテストが止まることはない。
+          docs_re='(^|/)[^/]*\.md$|^docs/|^\.claude/'
+
+          emit code      "$(printf '%s\n' "$files" | grep -vE "${docs_re}|^LICENSE$" || true)"
+          emit docs      "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)"
+          emit workflows "$(printf '%s\n' "$files" | grep -E  '^\.github/workflows/' || true)"
 
   # 静的ゲート: lint / 型 / フォーマット。最速で全 PR の門番になる。
   static:
