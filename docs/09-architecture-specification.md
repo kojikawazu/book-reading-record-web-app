@@ -96,7 +96,8 @@ flowchart TD
 ## 6. デプロイ / CI
 
 - デプロイ先は Vercel。
-- `front/vercel.json` の `ignoreCommand`（`scripts/vercel-ignore-docs.sh`）で、`docs/` のみ変更されたコミットは Vercel ビルドをスキップする。`front/` 配下やその他ファイルの変更がある場合は通常どおりビルドする。
+- `front/vercel.json` の `git.deploymentEnabled` でデプロイ対象ブランチを制御する（`"**": false` + `"main": true`）。`main` 以外のブランチでは Preview を発火させない。
+- **ビルドスキップ（`ignoreCommand`）は使わない。** 判定を誤ると「デプロイ履歴は緑のまま本番が古い」状態が潜伏するため（`.claude/rules/vercel.md` §2）。パスによる実行制御は本番状態を壊さない CI 側へ寄せる。
 - GitHub Actions（`.github/workflows/ci.yml`）は `docs/**` / `*.md` のみの変更時に CI をスキップする。
 - CI は4ジョブ構成（並列実行）:
   - `static` — `format:check` / `lint` / `tsc --noEmit`（静的ゲート・最速の門番）

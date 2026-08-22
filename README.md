@@ -147,5 +147,6 @@ make db-up / db-down  # IT 用 Postgres コンテナの起動 / 破棄
 ## Deploy
 
 - 本番は **Vercel**。
-- `front/vercel.json` の `ignoreCommand` により、`docs/` のみ変更のコミットは Vercel ビルドをスキップ。
+- `front/vercel.json` の `git.deploymentEnabled` により、**`main` 以外のブランチでは Vercel デプロイを発火させない**（Preview の無駄打ちを止める）。
+- ビルドスキップ（`ignoreCommand`）は**使わない**。失敗が「本番が古いまま緑に見える」形で潜伏するため（`.claude/rules/vercel.md`）。パスによる実行制御は CI 側で行う。
 - CI（`.github/workflows/ci.yml`）は `docs/**` のみの変更時に E2E をスキップ。
