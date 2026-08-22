@@ -1,13 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vitest/config";
-
-// docker-compose.test.yml の使い捨てコンテナに対応する既定接続先。
-// .env.test を置かなくても IT が回るよう、コミット不要な安全なローカル値をフォールバックにする。
-const DEFAULT_IT_ENV: Record<string, string> = {
-  DATABASE_URL: "postgresql://postgres:postgres@localhost:5433/book_record_test?schema=public",
-  DIRECT_URL: "postgresql://postgres:postgres@localhost:5433/book_record_test?schema=public",
-};
+// 設定ファイル自身のロード時点では resolve.alias がまだ効かないため、ここだけ相対 import にする
+// （`.claude/rules/testing.md`「import はパスエイリアスを使う」の不可避な例外）。
+import { applyTestDatabaseUrl } from "./tests/support/test-database-url";
 
 /**
  * IT（結合）専用構成。UT（`vitest.config.ts`）とは分離する。
@@ -16,36 +11,10 @@ const DEFAULT_IT_ENV: Record<string, string> = {
  * - DB 状態を共有するため直列実行（`fileParallelism: false` / 単一フォーク）にする。
  */
 
-// .env.test を最小パースして process.env へ流し込む。
-// prisma-client.ts は import 時に DATABASE_URL を読むため、ワーカーにも env を渡す必要がある。
-const loadTestEnv = (): Record<string, string> => {
-  const file = path.resolve(__dirname, ".env.test");
-  // .env.test はローカル上書き用（gitignore）。無ければコンテナ既定値で動かす。
-  if (!existsSync(file)) {
-    return { ...DEFAULT_IT_ENV };
-  }
-  const env: Record<string, string> = { ...DEFAULT_IT_ENV };
-  for (const raw of readFileSync(file, "utf8").split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 1) continue;
-    const key = line.slice(0, eq).trim();
-    let value = line.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    env[key] = value;
-  }
-  return env;
-};
-
-const testEnv = loadTestEnv();
-// globalSetup と `prisma db push` の子プロセスも同じ DATABASE_URL を見る必要があるため main 側にも反映する。
-Object.assign(process.env, testEnv);
+// 接続先の解決・検証・注入は tests/support/test-database-url.ts に集約する（`.claude/rules/testing.md`）。
+// globalSetup と `prisma db push` の子プロセスも同じ接続先を見る必要があるため、main 側の
+// process.env へも注入する。シェル由来の DATABASE_URL は検証済みの値で上書きされる。
+const databaseUrl = applyTestDatabaseUrl(process.env, __dirname);
 
 export default defineConfig({
   test: {
@@ -60,13 +29,14 @@ export default defineConfig({
     // 実 DB アクセス・スキーマ投入を待つため UT より長めに取る。
     testTimeout: 30_000,
     hookTimeout: 60_000,
-    // ワーカープロセスへ DATABASE_URL 等を伝搬する。
-    env: testEnv,
+    // ワーカープロセスへ検証済みの接続先を伝搬する。
+    env: { DATABASE_URL: databaseUrl },
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@tests": path.resolve(__dirname, "./tests"),
+      "@scripts": path.resolve(__dirname, "./scripts"),
       // サーバー専用ガード（import "server-only"）はテスト実行環境では不要なため空スタブへ差し替える。
       "server-only": path.resolve(__dirname, "./tests/support/server-only-stub.ts"),
     },

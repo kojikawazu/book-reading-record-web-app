@@ -106,9 +106,15 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
   - `pnpm test:e2e` — E2E（Playwright / Chromium）
 - 実行時設定:
   - **UT**: 外部 I/O（`fetch` / `localStorage` / Supabase / Prisma）をモックし、DB・ネットワーク非依存で実行する
-  - **IT**: `DATABASE_URL` をテスト用 Postgres コンテナに向け、`globalSetup` で `prisma db push` してスキーマを投入。DB 状態を共有するため直列実行する
+  - **IT**: 接続先は `tests/support/test-database-url.ts` が解決する（`TEST_DATABASE_URL` → 既定のローカルコンテナの順。`DATABASE_URL` は参照しない）。ホスト allowlist を通った値だけを `DATABASE_URL` へ注入し、`globalSetup` で `prisma db push` してスキーマを投入。DB 状態を共有するため直列実行する
   - **E2E(local レーン)**: §7 の受け入れケースは `NEXT_PUBLIC_REPOSITORY_DRIVER=local` で webServer を起動する
-  - **E2E(supabase レーン)**: `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` + DB コンテナで起動し、認証は env ゲート付きテストシームで通す
+  - **E2E(supabase レーン)**: `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` + DB コンテナで起動し、認証は env ゲート付きテストシームで通す。**接続先は IT と同じ `tests/support/test-database-url.ts` を通す**（現在 E2E は local レーンのみで DB 非依存のため未配線）
+- テスト DB の接続先ガード:
+  - 上書きは `TEST_DATABASE_URL` のみ。本番用の `DATABASE_URL` は読まず、検証を通った値で**上書きする**
+  - ホスト allowlist は `localhost` / `127.0.0.1` / `::1`。外れた場合は `prisma db push` / `TRUNCATE` の**前**に throw する
+  - 検証は解決時（`vitest.it.config.ts`）と破壊的操作の直前（`it-global-setup.ts` / `it-db.ts`）の両方で行う。前者はメインプロセス、後者はワーカープロセスで走るため片方では守れない
+  - 失敗メッセージにはホスト名・許可ホスト・テスト DB 起動コマンド・既定 URL を含める（接続 URL 全体は出さない。パスワードが含まれるため）
+  - 詳細な方針は `.claude/rules/testing.md`「テスト用 DB の接続先（破壊防止）」を正とする
 - 合格条件:
   - UT / IT / E2E がすべて成功（未実装機能待ちの `test.skip` を除く）
 

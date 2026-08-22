@@ -60,11 +60,17 @@ pnpm test:it:down   # テスト DB コンテナを破棄
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（任意、利用時のみ）
 - `NEXT_PUBLIC_REPOSITORY_DRIVER`（`supabase` or `local`）
-- `DATABASE_URL`
+- `DATABASE_URL`（**本番・開発の接続先。テストからは参照しません**）
 - `DIRECT_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`（サーバー用途のみ）
 
 実値は `.env.local` に設定し、`.env.example` は共有テンプレートとして管理します。
+
+IT / E2E のテスト DB 接続先は `TEST_DATABASE_URL` で指定します（`.env.test` または環境変数。どちらも未設定なら
+`docker-compose.test.yml` の使い捨てコンテナが既定値）。**本番用の `DATABASE_URL` はテストから参照されません。**
+ホストは `localhost` / `127.0.0.1` / `::1` のみ許可され、外れた場合は `prisma db push` / `TRUNCATE` の前に停止します
+（`.claude/rules/testing.md`）。
+
 `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリでは使用しません（Supabase Authプロジェクト側で管理）。
 
 ## Supabase Auth（Google OAuth）設定

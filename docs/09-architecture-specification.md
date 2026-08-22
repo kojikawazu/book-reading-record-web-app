@@ -64,9 +64,11 @@ flowchart TD
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（任意、利用時のみ）
   - `NEXT_PUBLIC_REPOSITORY_DRIVER`（`supabase` / `local`）
-  - `DATABASE_URL`
+  - `DATABASE_URL`（**本番・開発の接続先。テストからは参照しない**）
   - `DIRECT_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`（サーバー用途のみ）
+- テスト用の接続先は `front/.env.test`（gitignore 対象）または環境変数で指定する。`.env.local` には置かない
+  - `TEST_DATABASE_URL`（IT / E2E 専用。未設定なら `docker-compose.test.yml` の使い捨てコンテナが既定値。ホストは `localhost` / `127.0.0.1` / `::1` のみ許可）
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリの `.env.local` では管理しない（Supabase Auth プロジェクト側で管理）
 
 ## 5. Supabase + Prisma スキーマ同期フロー（チーム連携）
@@ -76,6 +78,7 @@ flowchart TD
 - このリポジトリ側の実施内容
   - Prismaで既存プロジェクトのテーブル定義を `db pull` して同期する
   - 実行コマンドは `cd front && pnpm prisma:pull`
+  - `scripts/prisma-with-env-local.mjs` は `.env.local`（本番接続情報）を注入して Prisma を起動するため、**破壊的サブコマンド（`migrate` / `db push` / `db execute` / `db seed`）を実行前に拒否する**（`.claude/rules/database.md` / `.claude/rules/production-data.md` をコードで担保する）
   - pull前後で `pnpm prisma:validate` / `pnpm prisma:generate` を実行する
   - 今回プロジェクトの物理テーブル名は `BookRecord` 接頭辞を付与する
     - `BookRecordBooks`
