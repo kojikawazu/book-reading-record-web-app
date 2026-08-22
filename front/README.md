@@ -111,10 +111,11 @@ IT / E2E のテスト DB 接続先は `TEST_DATABASE_URL` で指定します（`
 - `pnpm test:e2e:ui`: Playwright UIモード
 - `pnpm test:e2e:headed`: Headed実行
 
-## Vercel Build Skip Rule
+## Vercel Deploy Control
 
-- `front/vercel.json` の `ignoreCommand` で、`docs/` のみ変更されたコミットはVercelビルドをスキップする
-- `front/` 配下やその他ファイルの変更がある場合は通常どおりビルドする
+- `front/vercel.json` の `git.deploymentEnabled` でデプロイするブランチを制御する
+- `"**": false` で全ブランチを止めたうえで `"main": true` を上書きする。`deploymentEnabled` は**許可リストではなく拒否リスト**で、列挙しなかったブランチは既定で発火するため
+- ビルドスキップ（`ignoreCommand`）は**使わない**。判定を誤ると本番が静かに古くなる（`.claude/rules/vercel.md` §2）
 
 ## Routes
 
