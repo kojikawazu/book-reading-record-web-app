@@ -8,6 +8,8 @@ globs: "front/prisma/**,front/src/lib/server/**"
 ## スキーマ同期フロー（db pull 運用）
 
 > ⚠️ **このリポジトリから `prisma db push` / `prisma migrate` を実行しない**（`docs/01-business-requirements.md` §6・`docs/09-architecture-specification.md` §5）。
+>
+> 本番接続先に対する破壊的操作全般（手打ち SQL・MCP・管理コンソールを含む）の禁止事項と例外手順は `production-data.md` を参照する。
 
 - スキーマは既存 Supabase プロジェクトから `db pull` で同期する。`front/prisma/schema.prisma` を正とする。
 - 実行コマンド: `cd front && pnpm prisma:pull`。pull 前後で `pnpm prisma:validate` / `pnpm prisma:generate` を実行する。
