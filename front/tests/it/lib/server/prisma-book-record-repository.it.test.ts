@@ -24,8 +24,6 @@ afterAll(async () => {
  * 設定し、リポジトリ層では代入しない（`.claude/rules/database.md`）。その前提が実際に
  * 成り立っていることを実 Postgres で固定する。
  *
- * `updateBook` の感想同時更新は現在 Route Handler が `reflection` をパースしないため
- * API 経由では到達しない。リポジトリ層の契約としては生きているのでここで検証する。
  */
 describe("IT: PrismaBookRecordRepository の監査列（実 Postgres）", () => {
   // --- 正常系 ---
@@ -34,18 +32,6 @@ describe("IT: PrismaBookRecordRepository の監査列（実 Postgres）", () => 
 
     expect(Number.isNaN(new Date(book.createdAt).getTime())).toBe(false);
     expect(Number.isNaN(new Date(book.updatedAt).getTime())).toBe(false);
-  });
-
-  it("updateBook は感想を作成し createdAt を自動採番する", async () => {
-    const id = await seedBook();
-
-    const updated = await repository.updateBook(id, {
-      reflection: { learning: "学び", action: "行動", quote: "引用", createdAt: "" },
-    });
-
-    expect(updated.reflection).toMatchObject({ learning: "学び", action: "行動", quote: "引用" });
-    // 引数の createdAt（空文字）は採用されず、DB 側の @default(now()) が採番する。
-    expect(Number.isNaN(new Date(updated.reflection!.createdAt).getTime())).toBe(false);
   });
 
   it("saveReflection は書籍の updatedAt を進める（一覧の並び順が updatedAt 降順のため）", async () => {
@@ -64,6 +50,17 @@ describe("IT: PrismaBookRecordRepository の監査列（実 Postgres）", () => 
     expect(new Date(after.updatedAt).getTime()).toBeGreaterThan(
       new Date(before!.updatedAt).getTime()
     );
+  });
+
+  it("updateBook は既存の感想を保持したまま書籍を返す", async () => {
+    const id = await seedBook();
+    await repository.saveReflection(id, { learning: "学び", action: "行動", quote: "引用" });
+
+    const updated = await repository.updateBook(id, { title: "改題後タイトル" });
+
+    // 感想の保存は saveReflection に一本化したが、updateBook の戻り値には反映され続ける。
+    expect(updated.title).toBe("改題後タイトル");
+    expect(updated.reflection).toMatchObject({ learning: "学び", action: "行動", quote: "引用" });
   });
 
   // --- 準正常系 ---

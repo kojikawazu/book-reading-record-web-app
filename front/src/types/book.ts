@@ -81,7 +81,6 @@ export type UpdateBookInput = {
   status?: BookStatus;
   /** 明示的に undefined を渡すと完読解除（再読）を表現する。 */
   completedAt?: string | undefined;
-  reflection?: Reflection;
 };
 
 /** 進捗記録の入力。`loggedAt` 省略時は現在時刻を記録日とする。 */
