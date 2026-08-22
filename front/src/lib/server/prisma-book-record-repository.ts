@@ -310,11 +310,9 @@ export class PrismaBookRecordRepository implements BookRepository {
    * @throws {RepositoryValidationError} 入力不正・完読条件未達で completed の場合
    */
   async updateBook(bookId: string, patch: UpdateBookInput): Promise<Book> {
+    // 感想は saveReflection が扱うため、ここでは書籍のスカラー列だけ読めばよい。
     const source = await prisma.bookRecordBook.findUnique({
       where: { id: bookId },
-      include: {
-        reflection: true,
-      },
     });
 
     if (!source) {
@@ -364,47 +362,7 @@ export class PrismaBookRecordRepository implements BookRepository {
       },
     });
 
-    if (patch.reflection) {
-      const reflectionErrors = validateReflection(patch.reflection);
-      if (Object.keys(reflectionErrors).length > 0) {
-        throw new RepositoryValidationError(firstValidationMessage(reflectionErrors));
-      }
-
-      await prisma.bookRecordReflection.upsert({
-        where: {
-          bookId,
-        },
-        create: {
-          bookId,
-          learning: patch.reflection.learning,
-          action: patch.reflection.action,
-          quote: patch.reflection.quote,
-        },
-        update: {
-          learning: patch.reflection.learning,
-          action: patch.reflection.action,
-          quote: patch.reflection.quote,
-        },
-      });
-    }
-
-    // 感想を更新していないなら upsert 前の結果で足りる。更新した場合のみ再取得して整合させる。
-    if (!patch.reflection) {
-      return toBook(updated);
-    }
-
-    const refreshed = await prisma.bookRecordBook.findUnique({
-      where: { id: bookId },
-      include: {
-        reflection: true,
-      },
-    });
-
-    if (!refreshed) {
-      throw new RepositoryNotFoundError("対象の書籍が見つかりません。");
-    }
-
-    return toBook(refreshed);
+    return toBook(updated);
   }
 
   async addProgressLog(
@@ -475,11 +433,9 @@ export class PrismaBookRecordRepository implements BookRepository {
   }
 
   async saveReflection(bookId: string, input: ReflectionInput): Promise<Book> {
+    // 存在確認と、updatedAt を進めるための書き戻し値（status）だけを読む。
     const source = await prisma.bookRecordBook.findUnique({
       where: { id: bookId },
-      include: {
-        reflection: true,
-      },
     });
 
     if (!source) {

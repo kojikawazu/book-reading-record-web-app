@@ -29,6 +29,9 @@
 
 データ型定義は `docs/05-data-specification.md` を参照する。
 
+- **感想の保存は `saveReflection` に一本化する。** `updateBook` の `UpdateBookInput` は書籍自身の属性のみを受け取り、`reflection` を含まない。
+  - 経緯: 以前は `UpdateBookInput` に `reflection` があったが、UI は渡さず・Route Handler はパースせず・`LocalStorageRepository` は実装していない到達不能な経路だった（`PrismaBookRecordRepository` のみが実装を持っていた）。ドライバ間で挙動が食い違うため削除した。
+
 ## 3. エラー契約
 
 - バリデーション違反は業務エラーとして扱い、画面に表示可能なメッセージを返す
