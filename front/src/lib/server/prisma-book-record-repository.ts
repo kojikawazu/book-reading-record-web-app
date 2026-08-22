@@ -379,7 +379,6 @@ export class PrismaBookRecordRepository implements BookRepository {
           learning: patch.reflection.learning,
           action: patch.reflection.action,
           quote: patch.reflection.quote,
-          createdAt: new Date(),
         },
         update: {
           learning: patch.reflection.learning,
@@ -502,8 +501,6 @@ export class PrismaBookRecordRepository implements BookRepository {
           learning: input.learning,
           action: input.action,
           quote: input.quote,
-          // 初回作成時のみ採番し、上書き時は元の作成日時を維持する。
-          createdAt: source.reflection?.createdAt ?? new Date(),
         },
         update: {
           learning: input.learning,
@@ -511,11 +508,16 @@ export class PrismaBookRecordRepository implements BookRepository {
           quote: input.quote,
         },
       }),
+      // 感想の保存に合わせて書籍の updatedAt を進める。一覧の並び順が updatedAt 降順
+      // （docs/03-functional-specification.md 第2部 6）であり、LocalStorageRepository も
+      // 同様に書籍の updatedAt を更新するため、両ドライバで挙動を揃える必要がある。
+      //
+      // 監査列へ手動代入せず（.claude/rules/database.md）、status を同値で書き戻して
+      // @updatedAt を発火させる。`data: {}` では Prisma 6.16.2 が更新を発行せず
+      // updatedAt が進まないことを実測で確認済み（tests/it が挙動を固定する）。
       prisma.bookRecordBook.update({
         where: { id: bookId },
-        data: {
-          updatedAt: new Date(),
-        },
+        data: { status: source.status },
       }),
     ]);
 

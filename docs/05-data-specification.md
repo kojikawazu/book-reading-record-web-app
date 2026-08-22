@@ -46,6 +46,9 @@
 - 備考
   - 書籍登録直後の `currentPage` は `0` で初期化する
   - ユーザーIDやプロフィール情報はMVPでは保持しない
+  - `createdAt` / `updatedAt` は**永続化層が設定する**（`supabase` モードは `schema.prisma` の `@default(now())` / `@updatedAt`）。アプリケーションコードで代入しない（`.claude/rules/database.md`）
+  - `updatedAt` は書籍一覧の並び順を駆動する（`docs/03-functional-specification.md` 第2部 6）。**感想を保存したときも書籍の `updatedAt` は進む**（`local` / `supabase` の両モードで同じ）
+  - `completedAt` は完読日時であり監査列ではない。状態が完読へ遷移した時点で設定する
 
 ### 2.2 ProgressLog
 
