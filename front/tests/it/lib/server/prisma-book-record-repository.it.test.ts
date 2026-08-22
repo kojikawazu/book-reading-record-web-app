@@ -109,3 +109,74 @@ describe("IT: PrismaBookRecordRepository の監査列（実 Postgres）", () => 
     ).rejects.toThrow("対象の書籍が見つかりません。");
   });
 });
+
+/**
+ * 総ページ数が未入力（`TOTAL_PAGES_UNKNOWN` = 0）の書籍の扱い。
+ * `LocalStorageRepository` の UT と同じ観点を supabase ドライバ側でも固定し、
+ * 両ドライバの挙動が揃っていることを担保する（`.claude/rules/frontend.md`）。
+ */
+describe("IT: 総ページ数が未入力の書籍（実 Postgres）", () => {
+  /** 総ページ数を未入力にした書籍を 1 冊作る。 */
+  const createUnknownPagesBook = () => repository.createBook({ ...validBookBody, totalPages: 0 });
+
+  // --- 正常系 ---
+  it("総ページ数 0 で書籍を登録できる", async () => {
+    const book = await createUnknownPagesBook();
+
+    expect(book.totalPages).toBe(0);
+    expect(book.status).toBe("reading");
+  });
+
+  it("明示的に completed へ更新できる（到達ページを問わない）", async () => {
+    const book = await createUnknownPagesBook();
+
+    const updated = await repository.updateBook(book.id, { status: "completed" });
+
+    expect(updated.status).toBe("completed");
+    expect(updated.completedAt).toEqual(expect.any(String));
+  });
+
+  it("completed の進捗ログを記録できる", async () => {
+    const book = await createUnknownPagesBook();
+
+    const { book: updated } = await repository.addProgressLog(book.id, {
+      page: 12,
+      memo: "",
+      status: "completed",
+    });
+
+    expect(updated.status).toBe("completed");
+    expect(updated.currentPage).toBe(12);
+  });
+
+  // --- 異常系: 自動確定に巻き込まれないこと（最重要の回帰） ---
+  it("進捗を記録しても自動で完読にならない", async () => {
+    const book = await createUnknownPagesBook();
+
+    const { book: updated } = await repository.addProgressLog(book.id, {
+      page: 0,
+      memo: "",
+      status: "reading",
+    });
+
+    expect(updated.status).toBe("reading");
+  });
+
+  it("currentPage を更新しても自動で完読にならない", async () => {
+    const book = await createUnknownPagesBook();
+
+    const updated = await repository.updateBook(book.id, { currentPage: 50 });
+
+    expect(updated.status).toBe("reading");
+    expect(updated.completedAt).toBeUndefined();
+  });
+
+  // --- 準正常系: 総ページ数が既知なら従来どおり ---
+  it("総ページ数が既知なら到達で自動的に完読になる", async () => {
+    const book = await repository.createBook({ ...validBookBody, totalPages: 100 });
+
+    const updated = await repository.updateBook(book.id, { currentPage: 100 });
+
+    expect(updated.status).toBe("completed");
+  });
+});

@@ -1,4 +1,4 @@
-import { STATUS_ORDER } from "@/constants/book";
+import { STATUS_ORDER, TOTAL_PAGES_UNKNOWN } from "@/constants/book";
 import {
   INITIAL_STORAGE_PAYLOAD,
   RECOVERY_NOTICE_KEY,
@@ -6,6 +6,52 @@ import {
   STORAGE_VERSION,
 } from "@/constants/storage";
 import { Book, BookStatus, ProgressLog, StoragePayload, WeeklySummary } from "@/types/book";
+
+/**
+ * 総ページ数が入力済みかどうかを判定する。
+ *
+ * 未入力（`TOTAL_PAGES_UNKNOWN`）の書籍は分母を持たないため、進捗率の算出も
+ * 完読の自動確定も行わない。
+ *
+ * @param totalPages - 判定対象の総ページ数
+ * @returns 入力済みなら true
+ */
+export const hasKnownTotalPages = (totalPages: number): boolean => {
+  return totalPages > TOTAL_PAGES_UNKNOWN;
+};
+
+/**
+ * 到達ページが総ページに達したことによる完読の自動確定に該当するかを判定する。
+ *
+ * **総ページ数が未入力なら常に false**。`0` を分母とみなすと `currentPage >= 0` が
+ * 常に成立し、すべての書籍が完読になってしまうため（docs/03 第2部 1）。
+ * 未入力の書籍はユーザーが明示的に完読を選んだときだけ完読になる。
+ *
+ * @param currentPage - 到達ページ
+ * @param totalPages - 総ページ数
+ * @returns 自動確定に該当するなら true
+ */
+export const isCompletedByProgress = (currentPage: number, totalPages: number): boolean => {
+  return hasKnownTotalPages(totalPages) && currentPage >= totalPages;
+};
+
+/**
+ * 進捗の表示文字列を組み立てる（ダッシュボードと書籍詳細で共通）。
+ *
+ * 総ページ数が未入力なら**分母も進捗率も出さない**。分母が無いものを推測して
+ * 見せないための規則（docs/03 第2部 6）。
+ *
+ * @param book - 対象書籍
+ * @returns 入力済みなら `12 / 300 (4%)`、未入力なら `12 ページ`
+ */
+export const formatProgress = (book: Book): string => {
+  if (!hasKnownTotalPages(book.totalPages)) {
+    return `${book.currentPage} ページ`;
+  }
+
+  const rate = Math.round((book.currentPage / book.totalPages) * 1000) / 10;
+  return `${book.currentPage} / ${book.totalPages} (${rate}%)`;
+};
 
 // ISO 日時文字列を降順比較する（新しい日時ほど前）。
 const byDateDesc = (a: string, b: string): number => {

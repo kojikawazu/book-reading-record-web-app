@@ -3,7 +3,10 @@ import {
   computeWeeklySummary,
   consumeRecoveryNotice,
   createId,
+  formatProgress,
   getStatusOrder,
+  hasKnownTotalPages,
+  isCompletedByProgress,
   parseStoragePayload,
   persistStoragePayload,
   reflectionIsMissing,
@@ -111,6 +114,65 @@ describe("reflectionIsMissing", () => {
       reflection: { learning: "  ", action: "\t", quote: "", createdAt: daysAgoIso(0) },
     });
     expect(reflectionIsMissing(book)).toBe(true);
+  });
+});
+
+describe("hasKnownTotalPages", () => {
+  // --- 正常系 ---
+  it("1 以上なら入力済みと判定する", () => {
+    expect(hasKnownTotalPages(1)).toBe(true);
+    expect(hasKnownTotalPages(300)).toBe(true);
+  });
+
+  // --- 準正常系 ---
+  it("0（未入力）なら false", () => {
+    expect(hasKnownTotalPages(0)).toBe(false);
+  });
+
+  it("負数なら false", () => {
+    expect(hasKnownTotalPages(-1)).toBe(false);
+  });
+});
+
+describe("isCompletedByProgress", () => {
+  // --- 正常系 ---
+  it("到達ページが総ページ以上なら完読と判定する", () => {
+    expect(isCompletedByProgress(300, 300)).toBe(true);
+    expect(isCompletedByProgress(301, 300)).toBe(true);
+  });
+
+  // --- 準正常系 ---
+  it("到達ページが総ページ未満なら完読ではない", () => {
+    expect(isCompletedByProgress(299, 300)).toBe(false);
+  });
+
+  // --- 異常系（未入力を分母にしない）---
+  it("総ページ数が未入力ならページ数に関わらず false", () => {
+    // 0 を分母とみなすと currentPage >= 0 が常に成立し、全書籍が完読になってしまう。
+    expect(isCompletedByProgress(0, 0)).toBe(false);
+    expect(isCompletedByProgress(9999, 0)).toBe(false);
+  });
+});
+
+describe("formatProgress", () => {
+  // --- 正常系 ---
+  it("総ページ数が入力済みなら分母と進捗率を出す", () => {
+    expect(formatProgress(makeBook({ currentPage: 12, totalPages: 300 }))).toBe("12 / 300 (4%)");
+  });
+
+  it("進捗率は小数第1位まで丸める", () => {
+    expect(formatProgress(makeBook({ currentPage: 100, totalPages: 260 }))).toBe(
+      "100 / 260 (38.5%)"
+    );
+  });
+
+  // --- 準正常系 ---
+  it("総ページ数が未入力なら分母も進捗率も出さない", () => {
+    expect(formatProgress(makeBook({ currentPage: 12, totalPages: 0 }))).toBe("12 ページ");
+  });
+
+  it("未入力かつ未読なら 0 ページと表示する", () => {
+    expect(formatProgress(makeBook({ currentPage: 0, totalPages: 0 }))).toBe("0 ページ");
   });
 });
 

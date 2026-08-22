@@ -14,7 +14,7 @@
 
 | 用語 | 定義 |
 |---|---|
-| 完読 | `currentPage >= totalPages` を満たし、`status=completed` となった状態 |
+| 完読 | `status=completed` となった状態。総ページ数が入力済みなら `currentPage >= totalPages` で自動確定し、未入力なら明示指定で到達する |
 | 再読 | 完読済み書籍を `reading` へ戻すこと。`currentPage=0`・`completedAt` 解除・`reflection` 保持 |
 | 感想未記入 | `status=completed` かつ `reflection` 未登録、または `learning`/`action`/`quote` がすべて空（trim後） |
 | ドライバー | データ永続化先の切替設定。`NEXT_PUBLIC_REPOSITORY_DRIVER` の値（`supabase` / `local`） |
@@ -29,7 +29,7 @@
 - Issue #9: 書籍削除機能の追加（B1）
 - Issue #10: 書籍イメージ（書影）表示の追加（B2）
 - Issue #11: 書籍登録で著者名を任意入力に変更（B3）
-- Issue #12: 総ページ数未入力でも完読更新を許可（B4）
+- Issue #12: 総ページ数未入力でも完読更新を許可（B4・**対応済み**）
 
 詳細なタスク状態は `docs/11-tasks.md` を参照する。
 

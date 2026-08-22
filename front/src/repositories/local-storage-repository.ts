@@ -10,6 +10,8 @@ import {
 } from "@/types/book";
 import {
   createId,
+  hasKnownTotalPages,
+  isCompletedByProgress,
   parseStoragePayload,
   persistStoragePayload,
   sortBooks,
@@ -105,11 +107,17 @@ export class LocalStorageRepository implements BookRepository {
     };
 
     // 現在ページが総ページに到達したら完読を自動確定する（docs/03 第2部）。
-    if (merged.currentPage >= merged.totalPages) {
+    // 総ページ数が未入力の書籍は自動確定しない（isCompletedByProgress が false を返す）。
+    if (isCompletedByProgress(merged.currentPage, merged.totalPages)) {
       merged.status = "completed";
     }
 
-    if (merged.status === "completed" && merged.currentPage < merged.totalPages) {
+    // 総ページ数が未入力なら分母が無いため突合しない（明示的な完読指定を通す）。
+    if (
+      merged.status === "completed" &&
+      hasKnownTotalPages(merged.totalPages) &&
+      merged.currentPage < merged.totalPages
+    ) {
       throw new Error("完読にするには到達ページを総ページ以上にしてください。");
     }
 
@@ -149,11 +157,16 @@ export class LocalStorageRepository implements BookRepository {
     const source = payload.books[index];
     let status = input.status;
 
-    if (input.page >= source.totalPages) {
+    if (isCompletedByProgress(input.page, source.totalPages)) {
       status = "completed";
     }
 
-    if (status === "completed" && input.page < source.totalPages) {
+    // 総ページ数が未入力なら分母が無いため突合しない（明示的な完読指定を通す）。
+    if (
+      status === "completed" &&
+      hasKnownTotalPages(source.totalPages) &&
+      input.page < source.totalPages
+    ) {
       throw new Error("完読にするには到達ページを総ページ以上にしてください。");
     }
 

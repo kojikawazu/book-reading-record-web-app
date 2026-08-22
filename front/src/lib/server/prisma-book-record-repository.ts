@@ -13,6 +13,8 @@ import {
   ReflectionInput,
   UpdateBookInput,
 } from "@/types/book";
+import { TOTAL_PAGES_UNKNOWN } from "@/constants/book";
+import { hasKnownTotalPages, isCompletedByProgress } from "@/lib/helpers";
 import { validateReflection } from "@/validation/book";
 import { prisma } from "./prisma-client";
 
@@ -127,8 +129,9 @@ const validateBookDraft = (
     errors.genre = "ジャンルは80文字以内で入力してください。";
   }
 
-  if (!isIntegerInRange(input.totalPages, 1, 100000)) {
-    errors.totalPages = "総ページ数は1〜100000の整数で入力してください。";
+  // 未入力（TOTAL_PAGES_UNKNOWN）を許容する。クライアント側の validateBookForm と同じ規則。
+  if (input.totalPages !== TOTAL_PAGES_UNKNOWN && !isIntegerInRange(input.totalPages, 1, 100000)) {
+    errors.totalPages = "総ページ数は1〜100000の整数で入力してください（不明な場合は空欄）。";
   }
 
   if (!isIntegerInRange(input.currentPage, 0, 100000)) {
@@ -336,11 +339,16 @@ export class PrismaBookRecordRepository implements BookRepository {
     }
 
     let status = merged.status;
-    if (merged.currentPage >= merged.totalPages) {
+    if (isCompletedByProgress(merged.currentPage, merged.totalPages)) {
       status = "completed";
     }
 
-    if (status === "completed" && merged.currentPage < merged.totalPages) {
+    // 総ページ数が未入力なら分母が無いため突合しない（明示的な完読指定を通す）。
+    if (
+      status === "completed" &&
+      hasKnownTotalPages(merged.totalPages) &&
+      merged.currentPage < merged.totalPages
+    ) {
       throw new RepositoryValidationError("完読にするには到達ページを総ページ以上にしてください。");
     }
 
@@ -391,11 +399,16 @@ export class PrismaBookRecordRepository implements BookRepository {
     }
 
     let status: BookStatus = input.status;
-    if (input.page >= source.totalPages) {
+    if (isCompletedByProgress(input.page, source.totalPages)) {
       status = "completed";
     }
 
-    if (status === "completed" && input.page < source.totalPages) {
+    // 総ページ数が未入力なら分母が無いため突合しない（明示的な完読指定を通す）。
+    if (
+      status === "completed" &&
+      hasKnownTotalPages(source.totalPages) &&
+      input.page < source.totalPages
+    ) {
       throw new RepositoryValidationError("完読にするには到達ページを総ページ以上にしてください。");
     }
 

@@ -26,7 +26,7 @@
 - `title`: 必須、1-200文字
 - `author`: 必須、1-120文字
 - `genre`: 任意、0-80文字
-- `totalPages`: 必須、1-100000 の整数
+- `totalPages`: 任意、1-100000 の整数。`0` は「未入力」として許容する
 - `currentPage`: 0-100000 の整数（書籍登録時は `0` を自動設定）
 - `memo`: 任意、0-5000文字
 - `learning`: 任意、0-5000文字
@@ -36,8 +36,10 @@
 
 ## 3. 状態整合性
 
-- `currentPage >= totalPages` の場合、保存時に `status=completed` を強制する
-- `currentPage < totalPages` かつ `status=completed` は保存エラー
+- `totalPages >= 1`（入力済み）の場合
+  - `currentPage >= totalPages` なら保存時に `status=completed` を強制する
+  - `currentPage < totalPages` かつ `status=completed` は保存エラー
+- `totalPages = 0`（未入力）の場合は上記の突合を行わず、明示的な `status=completed` を許容する
 - 再読開始時は `currentPage=0` とする
 
 ## 4. XSS / 安全な表示
