@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
+import { findDestructiveCommand } from "./prisma-destructive-commands.mjs";
+
 const ENV_FILES = [".env.local", ".env"];
 
 const parseEnvFile = (content) => {
@@ -52,6 +54,19 @@ const loadEnv = () => {
 const args = process.argv.slice(2);
 if (args.length === 0) {
   console.error("Usage: node scripts/prisma-with-env-local.mjs <prisma-args...>");
+  process.exit(1);
+}
+
+// このスクリプトは .env.local（本番 Supabase の認証情報）を注入して Prisma を起動するため、
+// 破壊的サブコマンドを機械的に拒否する。ルールを文書だけでなくコードで担保する。
+const destructive = findDestructiveCommand(args);
+if (destructive) {
+  console.error(
+    `prisma ${destructive.join(" ")} はこのスクリプトから実行できません。\n` +
+      "本番スキーマの反映は別プロジェクト側で行い、こちらは pnpm prisma:pull で同期してください\n" +
+      "（.claude/rules/database.md / .claude/rules/production-data.md）。\n" +
+      "テストコンテナへの db push は vitest.it.config.ts 経由の IT 実行で行われます。"
+  );
   process.exit(1);
 }
 

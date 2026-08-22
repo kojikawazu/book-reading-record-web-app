@@ -14,6 +14,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@tests": path.resolve(__dirname, "./tests"),
+      // ビルドツール群（scripts/）にもガードのロジックがあり UT の対象になる。
+      "@scripts": path.resolve(__dirname, "./scripts"),
       // サーバー専用ガード（import "server-only"）は UT 実行環境では不要なため空スタブへ差し替える。
       "server-only": path.resolve(__dirname, "./tests/support/server-only-stub.ts"),
     },
