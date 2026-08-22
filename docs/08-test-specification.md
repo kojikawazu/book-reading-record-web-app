@@ -70,7 +70,7 @@
 - 分類定義と比率目安（正常 1 : 準正常+異常 2 以上）は `.claude/rules/testing.md` に従う。
 - **準正常系・異常系を各層で厚くする**（現状は正常系偏重のため）:
   - **UT**: バリデーション境界値・上限超過・完読不整合、`parse*` の型不正/欠落/列挙外、`ApiRepository` の 401/404/500/JSON 崩れ、`parseStoragePayload` の破損/バージョン不一致
-  - **IT**: 未認証 POST → 401、存在しない id → 404、完読条件未達 → 400、`reflection` upsert 上書き、進捗＋書籍の `$transaction` 原子性、**監査列の自動設定**（`createdAt` / `updatedAt` を永続化層が採番すること・感想保存で書籍の `updatedAt` が進むこと）
+  - **IT**: 未認証 POST → 401、存在しない id → 404、完読条件未達 → 400、`reflection` upsert 上書き、進捗＋書籍の `$transaction` 原子性、**監査列の自動設定**（`createdAt` / `updatedAt` を永続化層が採番すること・感想保存で書籍の `updatedAt` が進むこと）、**RLS ポリシー**（下記）
   - **E2E(supabase)**: 未ログインで更新系がブロックされる → ログイン後成功、API 失敗時の画面ハンドリング
 
 ### 2.3 モック方針
@@ -109,6 +109,12 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
   - **IT**: 接続先は `tests/support/test-database-url.ts` が解決する（`TEST_DATABASE_URL` → 既定のローカルコンテナの順。`DATABASE_URL` は参照しない）。ホスト allowlist を通った値だけを `DATABASE_URL` へ注入し、`globalSetup` で `prisma db push` してスキーマを投入。DB 状態を共有するため直列実行する
   - **E2E(local レーン)**: §7 の受け入れケースは `NEXT_PUBLIC_REPOSITORY_DRIVER=local` で webServer を起動する
   - **E2E(supabase レーン)**: `NEXT_PUBLIC_REPOSITORY_DRIVER=supabase` + DB コンテナで起動し、認証は env ゲート付きテストシームで通す。**接続先は IT と同じ `tests/support/test-database-url.ts` を通す**（現在 E2E は local レーンのみで DB 非依存のため未配線）
+- RLS ポリシーの検証:
+  - `front/prisma/rls-policies.sql`（本番ポリシーの写し）を `globalSetup` でテストコンテナへ適用する。足場（`auth` スキーマ・`auth.uid()`・非オーナーロール）は `tests/support/rls-test-setup.sql` が作る
+  - **Prisma は `DATABASE_URL` で DB オーナーとして接続するため RLS をバイパスする**（`docs/06-security-specification.md` §7.1）。他の IT が全件成功してもポリシーは検証されないため、非オーナーロール（`rls_tester`）で接続する専用の IT を置く
+  - 認証状態は `set_config('request.jwt.claims', ...)` をトランザクションローカルに設定して切り替える
+  - 受け入れ観点: 未認証の SELECT 可 / 未認証の INSERT 拒否（3 テーブル）/ 未認証の UPDATE・DELETE が 0 行 / 認証済みの INSERT・UPDATE・DELETE 可 / **進捗ログは認証済みでも UPDATE できない（追記専用）** / オーナー接続は RLS をバイパスする
+  - **挙動の非対称**: INSERT の `WITH CHECK` 違反はエラーになるが、UPDATE / DELETE / SELECT はポリシーで弾かれてもエラーにならず対象 0 行になる
 - テスト DB の接続先ガード:
   - 上書きは `TEST_DATABASE_URL` のみ。本番用の `DATABASE_URL` は読まず、検証を通った値で**上書きする**
   - ホスト allowlist は `localhost` / `127.0.0.1` / `::1`。外れた場合は `prisma db push` / `TRUNCATE` の**前**に throw する
