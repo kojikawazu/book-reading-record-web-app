@@ -10,6 +10,7 @@ import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
 import { ctx, jsonReq, validBookBody } from "@tests/support/it-harness";
 import { POST as createBookRoute } from "@/app/api/book-record/books/route";
 import { POST } from "@/app/api/book-record/books/[id]/reflection/route";
+import { GET } from "@/app/api/book-record/books/[id]/route";
 
 const authMock = vi.mocked(requireAuthenticatedUser);
 const MISSING_ID = "00000000-0000-0000-0000-000000000000";
@@ -59,6 +60,42 @@ describe("IT: /api/book-record/books/[id]/reflection（実 Postgres・upsert）"
     // 内容は上書き、作成日時は初回のまま（採番し直さない）。
     expect(second.book.reflection).toMatchObject({ learning: "改訂版", action: "a2", quote: "q2" });
     expect(second.book.reflection.createdAt).toBe(createdAt);
+  });
+
+  it("感想保存は書籍の updatedAt を進める（一覧の並び順が updatedAt 降順のため）", async () => {
+    const id = await seedBook();
+    const before = (await (await GET(jsonReq({}), ctx(id))).json()).book;
+
+    // updatedAt はミリ秒精度のため、同一ミリ秒に収まると差が出ずテストが不安定になる。
+    // 実装の正否と無関係な揺れを避けるために最小限だけ待つ。
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const after = (
+      await (
+        await POST(jsonReq({ learning: "学び", action: "行動", quote: "引用" }), ctx(id))
+      ).json()
+    ).book;
+
+    expect(new Date(after.updatedAt).getTime()).toBeGreaterThan(
+      new Date(before.updatedAt).getTime()
+    );
+  });
+
+  it("感想保存は書籍の他フィールドを変えない（updatedAt を進めるための書き戻しに副作用がない）", async () => {
+    const id = await seedBook();
+    const before = (await (await GET(jsonReq({}), ctx(id))).json()).book;
+
+    await POST(jsonReq({ learning: "学び", action: "行動", quote: "引用" }), ctx(id));
+    const after = (await (await GET(jsonReq({}), ctx(id))).json()).book;
+
+    expect(after).toMatchObject({
+      title: before.title,
+      author: before.author,
+      status: before.status,
+      currentPage: before.currentPage,
+      totalPages: before.totalPages,
+      createdAt: before.createdAt,
+    });
   });
 
   // 準正常系 / 異常系
