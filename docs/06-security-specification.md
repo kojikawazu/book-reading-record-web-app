@@ -13,7 +13,8 @@
 - [7. RLSポリシー（Row Level Security）](#7-rlsポリシーrow-level-security)
   - [7.1 方針](#71-方針)
   - [7.2 ポリシー定義](#72-ポリシー定義)
-  - [7.3 適用日](#73-適用日)
+  - [7.3 適用と突合](#73-適用と突合)
+  - [7.4 検証方法](#74-検証方法)
 - [8. 将来拡張（Phase 2）](#8-将来拡張phase-2)
 
 ## 1. 目的
@@ -75,15 +76,24 @@
 | `BookRecordProgressLogs` | 誰でも可 | 認証必須 | — | 認証必須 |
 | `BookRecordReflections` | 誰でも可 | 認証必須 | 認証必須 | 認証必須 |
 
-- SELECT（`Public read`）: `USING (true)` — 未ログインでも閲覧可能
-- INSERT（`Auth write`）: `WITH CHECK (auth.uid() IS NOT NULL)` — ログイン必須
-- UPDATE（`Auth update`）: `USING / WITH CHECK (auth.uid() IS NOT NULL)` — ログイン必須
-- DELETE（`Auth delete`）: `USING (auth.uid() IS NOT NULL)` — ログイン必須
 - `BookRecordProgressLogs` は UPDATE ポリシーなし（進捗ログは追記のみで編集不可）
+- ポリシー名は SELECT が `Public read`、INSERT が `Auth write`、UPDATE が `Auth update`、DELETE が `Auth delete`
+- 対象ロールはすべて `public`（＝全ロール）。`anon` / `authenticated` を名指ししない
 
-### 7.3 適用日
+**SQL 定義は `front/prisma/rls-policies.sql` を参照する。** 上表は「誰が何をできるか」の業務上の意図を示し、`USING` / `WITH CHECK` の式は SQL ファイル側を唯一の記述箇所とする（同じ知識を 2 箇所に書かない）。
 
+### 7.3 適用と突合
+
+- **正は本番（共有 Supabase）側にある。** `front/prisma/rls-policies.sql` はその写しであり、このリポジトリから本番へ適用しない（`.claude/rules/database.md`・`.claude/rules/production-data.md`）
 - 2026-03-22 に全ポリシーを Supabase SQL Editor で適用済み
+- 2026-08-22 に `pg_policies` を参照して写しと突合し、11 ポリシーが一致することを確認した。突合用のクエリは SQL ファイルの冒頭コメントに記載する
+- 写しは IT のテストコンテナへ適用され、実挙動が検証される（`docs/08-test-specification.md` §3）
+
+### 7.4 検証方法
+
+- **Prisma は `DATABASE_URL` で DB オーナーとして接続するため RLS をバイパスする**（§7.1）。したがって通常の IT が全件成功してもポリシーは検証されない
+- IT は非オーナーロール（`rls_tester`）で接続し、`auth.uid()` の有無で挙動が変わることを確かめる（`front/tests/it/prisma/rls-policies.it.test.ts`）
+- 挙動の非対称に注意する。**INSERT の `WITH CHECK` 違反はエラーになるが、UPDATE / DELETE / SELECT はポリシーで弾かれてもエラーにならず対象 0 行になる**
 
 ## 8. 将来拡張（Phase 2）
 
