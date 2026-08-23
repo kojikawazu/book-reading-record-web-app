@@ -25,7 +25,7 @@
 | error-handling.md | 全体 | エラーハンドリング方針（バリデーション・HTTP ステータス・統一レスポンス） |
 | security.md | 全体 | セキュリティ共通方針（認証・通信・インジェクション・シークレット） |
 | production-data.md | 全体 | 本番データの保護（破壊的操作の禁止・環境分離・AI エージェント制約・例外手順） |
-| github-actions.md | CI | CI の発火ルール（コードとドキュメントを別フィルタ・別ジョブ・必須チェックと paths-ignore を併用しない） |
+| github-actions.md | CI | ワークフローの静的解析（actionlint）と発火ルール（コードとドキュメントを別フィルタ・別ジョブ・必須チェックと paths-ignore を併用しない） |
 | vercel.md | デプロイ | Vercel のデプロイ制御（ブランチ単位の deploymentEnabled・ignoreCommand は入れない） |
 | typescript.md | TS コード | TypeScript 固有規約（type/interface・型/定数の配置・any 禁止・import type） |
 | jsdoc.md | TS コード | JSDoc(TSDoc) 規約（公開シンボルに必須・型定義のコメント） |

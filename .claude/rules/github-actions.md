@@ -1,13 +1,61 @@
 ---
-description: GitHub Actions の発火ルール — 何を変更したときに何を動かすか
+description: GitHub Actions のルール — ワークフローの静的解析（actionlint）と発火ルール
 globs: ".github/workflows/**"
 ---
 
-# GitHub Actions の発火ルール
+# GitHub Actions のルール
 
-本ルールの実装は `.github/workflows/ci.yml`。markdownlint の対象・有効ルールは `.markdownlint-cli2.jsonc` を単一の真実とする（ローカル実行と CI で同じ設定が効く）。
+本ルールは 2 つを定める。
 
-**「変更した内容に関係のあるジョブだけを動かす」** を原則とする。ドキュメントやルールの更新でテスト・ビルド・デプロイを回さない（CI 時間・コストの浪費、キュー待ちによる他 PR のブロック、無意味なデプロイの発生を防ぐ）。
+1. **ワークフローの静的解析**: ワークフロー自体の誤りを actionlint で機械的に潰す。実装は `.github/workflows/actionlint.yml`。
+2. **発火ルール**: **「変更した内容に関係のあるジョブだけを動かす」**。ドキュメントやルールの更新でテスト・ビルド・デプロイを回さない（CI 時間・コストの浪費、キュー待ちによる他 PR のブロック、無意味なデプロイの発生を防ぐ）。実装は `.github/workflows/ci.yml`。
+
+markdownlint の対象・有効ルールは `.markdownlint-cli2.jsonc` を単一の真実とする（ローカル実行と CI で同じ設定が効く）。
+
+## ワークフローの静的解析（actionlint）
+
+**ワークフローを追加・変更したら、[actionlint](https://github.com/rhysd/actionlint) による検証を CI で必須にする。** ワークフローの誤りは「push して実際に動かすまで気づけない」ため、CI 時間を溶かす前に機械で潰す。
+
+検出できるもの:
+
+| 検出内容 | 例 |
+|---|---|
+| ランナーラベルの誤り | `runs-on: ubuntu-lates`（typo）／未登録のセルフホストラベル |
+| アクション入力名の誤り | `actions/checkout@v4` に `fetch-dept:`（正: `fetch-depth`） |
+| 式・コンテキストの誤り | 存在しない `steps.<id>.outputs.*` の参照、型の不一致 |
+| ジョブ依存の誤り | `needs:` が存在しないジョブ ID を指している |
+| **スクリプトインジェクション** | `run: echo "${{ github.event.pull_request.title }}"` のように untrusted input を `run:` へ直接埋め込む（環境変数経由に直す） |
+| シェルスクリプトの不備 | `run:` の中身（shellcheck 連携。クォート漏れ等） |
+| cron 式・glob の誤り | `schedule` の cron 構文、`branches` のパターン |
+
+**検出できないもの**（機械では判断できないため、レビューで見る）: ブランチ名・パスフィルタの内容が意図と合っているか、参照しているシークレットが実在するか、ジョブの実行順序が業務的に正しいか。
+
+### CI での実行
+
+`.github/workflows/actionlint.yml` として**独立したワークフロー**で実行する。`ci.yml` のジョブとして持たない。
+
+- **パスフィルタをかけず、全 PR で常に実行する**。実行は数秒で終わるため、「ワークフローを変更したときだけ動かす」ための判定ジョブ（`changes`）を経由させると**判定のほうが検査より高くつく**。常時起動なので必須チェックにしても pending で詰まらない。
+- **`actions/checkout` を必ず先に置く**。actionlint は Git リポジトリの中から `.github/workflows` を探すため、リポジトリ外で実行するとエラー終了する。
+- **バージョンを固定する**。`latest` にすると、コードを変えていないのに新リリースの検査強化で CI が落ちる。更新は依存更新として明示的に行う（`run:` 内のバージョンは Dependabot では更新されない）。
+- **shellcheck の追加設定は不要**。GitHub ホストの ubuntu ランナーにはプリインストール済みで、PATH にあれば `run:` のシェルスクリプトも自動で併せて検査される。
+- **バイナリ取得はチェックサム検証を伴わない**ため、リスクはバージョン固定（スクリプト URL・本体の双方）で抑える。あわせて**このジョブにシークレットを渡さず `permissions: contents: read` に絞る**（万一取得物が不正でも、読み取り専用のチェックアウト以外に到達できない）。
+
+### ローカルでの実行
+
+- **push する前に手元で実行する**（`brew install actionlint`）。引数なしで実行すると `.github/workflows` を自動検出して全ワークフローを検査し、指摘があれば終了コード 1 で落ちる。
+- **手元に shellcheck が無いと `run:` の中身は検査されない**（actionlint 自体は通る）。ローカルで exit 0 でも、CI で shellcheck 由来の指摘が出ることがある。
+
+### 抑制と設定
+
+抑制の作法（理由を書く・範囲を最小にする・増えたら設定自体を見直す）は `static-analysis.md` に従う。actionlint 固有の手段は以下:
+
+| 目的 | 手段 |
+|---|---|
+| セルフホストランナーのラベルを認識させる | `.github/actionlint.yaml` の `self-hosted-runner.labels` に登録する（`actionlint -init-config` で雛形を生成できる） |
+| 特定のエラーメッセージを無視する | `-ignore <正規表現>`（繰り返し指定可）／`.github/actionlint.yaml` の `paths.<glob>.ignore` |
+| shellcheck の特定ルールを無視する | 該当箇所の直前に `# shellcheck disable=SC2086` を書く（`run:` 内の対象行のみ） |
+
+- **リポジトリ単位・ワークフロー単位での一括無効化をしない**。無視するなら対象を絞り、設定ファイルに理由をコメントで残す。
 
 ## トリガの基本形
 
@@ -35,10 +83,11 @@ globs: ".github/workflows/**"
 | テストコード（`front/e2e/**`・`*.test.ts`） | ✅ | ❌ | — |
 | `docs/**`、`*.md`、`README.md` | ❌ | ❌ | markdown lint、リンク切れチェック |
 | `.claude/**`（rules / skills） | ❌ | ❌ | markdown lint |
-| `.github/workflows/**` | ✅（自身の検証のため） | ❌ | actionlint |
+| `.github/workflows/**` | ✅（自身の検証のため） | ❌ | — |
 | 依存関係（`pnpm-lock.yaml`） | ✅ | ✅ | — |
 | `front/prisma/schema.prisma` | ✅（IT が DB スキーマに依存するため） | ✅ | `prisma validate` |
 
+- **actionlint は上表の対象外**。パスフィルタを持たない独立ワークフローとして全 PR で常に走る（前節「CI での実行」）。上表は `ci.yml` の中の判定を指す。
 - **ドキュメント変更でも「何も動かさない」にはしない**。markdown lint・リンク切れ・必須ファイル（README.md / CLAUDE.md）の存在検証は軽量なので実行する。
 - **IT（`pnpm test:it`）と E2E(supabase レーン) は DB コンテナ起動を伴い重い**。PR では実行するが、ドキュメント・ルールのみの変更ではスキップする。
 
@@ -126,8 +175,17 @@ jobs:
 - デプロイ workflow には `concurrency.cancel-in-progress: false` を設定し、**デプロイ途中でのキャンセルによる不整合を防ぐ**。
 - **CI から共有 Supabase プロジェクトへ接続しない**（`.claude/rules/database.md`）。DB を伴うジョブは `docker-compose.test.yml` の使い捨てコンテナのみを使う。
 
+## 関連ルールとの分担（重複させない）
+
+| 観点 | 担当ルールファイル |
+|---|---|
+| どのツールをどのワークフローでどう実行するか（YAML の中身・バージョン固定・権限） | **本ファイル** |
+| 静的解析の運用（CI 必須・警告ゼロ・抑制コメントの作法） | `static-analysis.md` |
+| Vercel のデプロイをどのブランチで走らせるか | `vercel.md` |
+
 ## レビュー観点
 
+- **actionlint にパスフィルタが付いていないか**（付けると判定のほうが検査より高くつく）。**バージョンが `latest` や `main` になっていないか**（コード無変更でも CI が落ちる）。
 - ドキュメント・ルールのみの PR で、テストやデプロイが起動していないか。
 - コードとドキュメントのフィルタが**独立して評価**されているか（実装 + ドキュメント更新の PR で両方走るか）。
 - 逆に、**アプリコードを変更したのに必要なジョブがスキップされていないか**（パスフィルタの書き漏れ）。
