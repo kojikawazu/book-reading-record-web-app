@@ -14,6 +14,7 @@
 | workflow.md | 全体 | 開発フロー（ブランチ運用・テスト必須） |
 | quality-gate.md | 全体 | 品質ゲート（セルフレビュー・設計/実装レビュー） |
 | documentation.md | 全体 | ドキュメント更新ルール |
+| lessons-learned.md | 全体 | 教訓の記録（docs/lessons-learned.md へ追記・トリガー限定・ルールへの昇格） |
 | git.md | 全体 | GitHub Flow・ブランチ命名・push 禁止物 |
 | github-issue.md | 全体 | GitHub issue 運用（ブランチと対で起票・open/close で進捗管理・サブ issue） |
 | pr-description.md | 全体 | PR 本文の必須セクション（変更種別ごとに固定・省略禁止・スコープ外の明示） |
@@ -50,3 +51,5 @@
 | 09 | architecture-specification | アーキテクチャ仕様 |
 | 10 | miscellaneous-specification | その他（用語集・参照） |
 | 11 | tasks | タスク・体制・進行フロー |
+
+番号を振らない継続記録として `docs/lessons-learned.md`（教訓ログ）を置く。連番仕様書が「埋めて完成させる」ものであるのに対し、こちらは事象のたびに追記し続ける。
