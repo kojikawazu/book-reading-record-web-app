@@ -16,6 +16,7 @@
 | documentation.md | 全体 | ドキュメント更新ルール |
 | git.md | 全体 | GitHub Flow・ブランチ命名・push 禁止物 |
 | github-issue.md | 全体 | GitHub issue 運用（ブランチと対で起票・open/close で進捗管理・サブ issue） |
+| pr-description.md | 全体 | PR 本文の必須セクション（変更種別ごとに固定・省略禁止・スコープ外の明示） |
 | testing.md | 全体 | テスト分類・原則・3層(UT/IT/E2E)・モック/DBコンテナ方針・テスト配置・テストDB接続先ガード |
 | coding-standards.md | 全体 | コーディング規約（TypeScript strict・pnpm・ESLint/Prettier） |
 | duplication.md | 全体 | 重複と共通化の判断基準（同じ知識のみ共通化・3回目で共通化） |
