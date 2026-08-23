@@ -29,6 +29,7 @@ globs:
 | 業務ルール / バリデーション仕様の変更 | docs/03-functional-specification.md、docs/06-security-specification.md |
 | E2E / テスト仕様の変更 | docs/08-test-specification.md |
 | 開発ルール / 規約の変更 | CLAUDE.md、.claude/rules/ |
+| 事故・障害の発生、レビュー指摘での誤り判明、原因判明後のハマり | docs/lessons-learned.md（`lessons-learned.md` の記録トリガー） |
 
 該当する変更がない場合はスキップする。
 
