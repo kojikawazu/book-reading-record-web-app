@@ -1,0 +1,43 @@
+name: actionlint
+
+# ワークフロー自身の静的解析。方針は .claude/rules/github-actions.md を正とする。
+#
+# ci.yml から独立させ、パスフィルタをかけずに全 PR で常に実行する。検査は数秒で
+# 終わるのに対し、「ワークフローを変えたときだけ動かす」ための判定ジョブ（changes）
+# を経由させると判定のほうが検査より高くつくため。常時起動なので必須チェックに
+# 指定しても pending で詰まらない。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 取得スクリプトはチェックサム検証を伴わないため、万一取得物が不正でも読み取り専用の
+# チェックアウト以外に到達できないよう権限を絞る。このジョブにシークレットは渡さない。
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      # actionlint は Git リポジトリの中から .github/workflows を探すため、
+      # チェックアウトを必ず先に置く（リポジトリ外で実行するとエラー終了する）。
+      - uses: actions/checkout@v4
+
+      # バージョンを固定する。latest にすると、コードを変えていないのに新リリースの
+      # 検査強化で CI が落ちる。更新は依存更新として明示的に行う（run: 内のバージョンは
+      # Dependabot では更新されない）。スクリプト URL・本体の双方をタグで固定する。
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+        run: bash <(curl -sSfL "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}"
+
+      # shellcheck の追加設定は不要。ubuntu ランナーにプリインストール済みで、
+      # PATH にあれば run: のシェルスクリプトも自動で併せて検査される。
+      - name: Run actionlint
+        run: ./actionlint -color

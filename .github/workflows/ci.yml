@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 jobs:
-  # 変更範囲の判定。code / docs / workflows は独立した判定であり、排他ではない。
+  # 変更範囲の判定。code / docs は独立した判定であり、排他ではない。
   # 実装とドキュメントを同一 PR で更新する運用（.claude/rules/documentation.md）のため、
   # code と docs が両方 true になる PR が正常系。
   changes:
@@ -30,7 +30,6 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
       docs: ${{ steps.filter.outputs.docs }}
-      workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -82,7 +81,6 @@ jobs:
 
           emit code      "$(printf '%s\n' "$files" | grep -vE "${docs_re}|^LICENSE$" || true)"
           emit docs      "$(printf '%s\n' "$files" | grep -E  "$docs_re" || true)"
-          emit workflows "$(printf '%s\n' "$files" | grep -E  '^\.github/workflows/' || true)"
 
   # 静的ゲート: lint / 型 / フォーマット。最速で全 PR の門番になる。
   static:
@@ -254,17 +252,3 @@ jobs:
             --exclude-path base
             '**/*.md' '.claude/**/*.md'
           fail: true
-
-  # ワークフロー自身の検証。構文ミス・存在しない式を早期に検出する。
-  actionlint:
-    needs: changes
-    if: needs.changes.outputs.workflows == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # 公式のインストールスクリプトを使う（バージョンタグの推測を避ける）。
-      - name: Run actionlint
-        run: |
-          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color
