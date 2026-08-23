@@ -169,6 +169,18 @@ export class ApiRepository implements BookRepository {
   }
 
   /**
+   * 書籍を1冊削除する。関連データの削除はサーバー側（DB のカスケード）が担う。
+   *
+   * @param bookId - 対象書籍の ID
+   * @throws {HttpError} レスポンスが非 2xx の場合
+   */
+  async deleteBook(bookId: string): Promise<void> {
+    await this.request<{ id: string }>(`/api/book-record/books/${bookId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
    * 一覧を取得してクライアント側で部分一致フィルタする（検索専用 API は持たない）。
    *
    * @param query - 検索キーワード（空なら全件）

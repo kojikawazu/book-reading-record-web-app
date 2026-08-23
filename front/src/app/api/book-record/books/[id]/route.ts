@@ -143,3 +143,36 @@ export async function PATCH(request: NextRequest, context: Params) {
     return errorResponse("書籍の更新に失敗しました。", 500);
   }
 }
+
+/**
+ * DELETE /api/book-record/books/[id] — 書籍を削除する（Bearer 認証必須）。
+ *
+ * 関連する進捗ログ・感想は DB のカスケード削除で追随する。復元手段は持たない
+ * （docs/05-data-specification.md「削除方針」）。
+ *
+ * 204 ではなく 200 で `{ id }` を返す。クライアント（ApiRepository）は共通ラッパーで
+ * 必ず JSON をパースするため、本文が無いと例外になるためである。
+ *
+ * @param request - 受信リクエスト（Authorization ヘッダ）
+ * @param context - 動的ルートパラメータ（書籍 ID）
+ * @returns 削除した書籍 ID の JSON、またはエラー時のエラーレスポンス
+ */
+export async function DELETE(request: NextRequest, context: Params) {
+  try {
+    await requireAuthenticatedUser(request);
+    const { id } = await context.params;
+
+    await repository.deleteBook(id);
+    return NextResponse.json({ id });
+  } catch (error) {
+    if (isAuthGuardError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
+    if (isRepositoryError(error)) {
+      return errorResponse(error.message, error.statusCode);
+    }
+
+    return errorResponse("書籍の削除に失敗しました。", 500);
+  }
+}

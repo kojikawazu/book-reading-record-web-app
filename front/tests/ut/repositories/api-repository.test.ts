@@ -103,6 +103,31 @@ describe("createBook", () => {
   });
 });
 
+describe("deleteBook", () => {
+  // --- 正常系 ---
+  it("DELETE メソッドで対象書籍のパスを呼ぶ", async () => {
+    fetchMock.mockResolvedValue(res(200, { id: "b1" }));
+    await repo.deleteBook("b1");
+
+    const [path, init] = fetchMock.mock.calls[0];
+    expect(path).toBe("/api/book-record/books/b1");
+    expect(init.method).toBe("DELETE");
+  });
+
+  // --- 準正常系 ---
+  it("404 は例外として伝播する（getBook と違い null に握り潰さない）", async () => {
+    // 削除は「対象が無い」ことを成功と見なせない。呼び出し側に失敗を伝える必要がある。
+    fetchMock.mockResolvedValue(res(404, { message: "対象の書籍が見つかりません。" }));
+    await expect(repo.deleteBook("missing")).rejects.toThrow("対象の書籍が見つかりません。");
+  });
+
+  // --- 異常系 ---
+  it("401（未認証）は例外として伝播する", async () => {
+    fetchMock.mockResolvedValue(res(401, { message: "認証が必要です。" }));
+    await expect(repo.deleteBook("b1")).rejects.toThrow("認証が必要です。");
+  });
+});
+
 describe("エラーメッセージ抽出", () => {
   // --- 準正常系 ---
   it("非 2xx の message をエラーメッセージに使う", async () => {

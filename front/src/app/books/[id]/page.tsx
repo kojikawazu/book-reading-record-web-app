@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
@@ -24,6 +24,7 @@ import { validateProgressForm, ValidationErrors } from "@/validation/book";
  */
 export default function BookDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const bookId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { authRequired, loading: authLoading, isAuthenticated, configError } = useAuthSession();
 
@@ -43,6 +44,9 @@ export default function BookDetailPage() {
   const [saveMessage, setSaveMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  // 削除は取り消せないため、確認パネルを挟んでから実行する（docs/03 第1部 3.3）。
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const showReflectionForm = useMemo(() => {
     if (!book) {
@@ -179,6 +183,31 @@ export default function BookDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!book) {
+      return;
+    }
+
+    if (authRequired && !isAuthenticated) {
+      return;
+    }
+
+    setErrorMessage("");
+    setSaveMessage("");
+    setDeleting(true);
+
+    try {
+      await repository.deleteBook(book.id);
+      // 削除済みの詳細ページに留まると「見つかりません」を見せることになるため一覧へ戻す。
+      // 成功時はここで遷移するため、deleting は false に戻さない（連打による二重削除を防ぐ）。
+      router.push("/");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "書籍の削除に失敗しました。");
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   if (authRequired && !authLoading && !isAuthenticated) {
     return (
       <OrganicShell
@@ -241,9 +270,54 @@ export default function BookDetailPage() {
               再読開始
             </button>
           )}
+          <button
+            type="button"
+            data-testid="delete-book-button"
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="btn-secondary px-4 py-2 text-sm text-[color:var(--danger-text)]"
+          >
+            削除
+          </button>
         </>
       }
     >
+      {deleteConfirmOpen && (
+        <section
+          data-testid="delete-confirm-dialog"
+          role="alertdialog"
+          aria-labelledby="delete-confirm-title"
+          className="notice-danger space-y-3 p-4"
+        >
+          <h2 id="delete-confirm-title" className="text-base font-bold">
+            この書籍を削除しますか？
+          </h2>
+          <p className="text-sm">
+            「{book.title}」と、その進捗履歴・完読時感想をすべて削除します。
+            <strong>この操作は取り消せません。</strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-testid="delete-confirm-button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="btn-danger px-4 py-2 text-sm"
+            >
+              {deleting ? "削除しています..." : "削除する"}
+            </button>
+            <button
+              type="button"
+              data-testid="delete-cancel-button"
+              onClick={() => setDeleteConfirmOpen(false)}
+              disabled={deleting}
+              className="btn-secondary px-4 py-2 text-sm"
+            >
+              キャンセル
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="panel-card p-5 md:p-6">
         <h2
           data-testid="book-title"

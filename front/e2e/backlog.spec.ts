@@ -2,9 +2,10 @@
  * バックログ B1〜B4 の E2E テスト
  *
  * 未実装の機能は test.skip でマークし、実装完了時に test へ変更して有効化する。
+ * 現時点で skip は無い（B2 は Issue #10 実装時に追加する）。
  *
  * カバレッジ:
- *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1（未実装・skip）
+ *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1（**実装済み・有効**）
  *   B2: 書籍イメージ（Issue #10）→ UI・外部URL表示が絡むため、Issue #10 実装時に別途追加する
  *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1, B3-S2（**実装済み・有効**）
  *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3（**実装済み・有効**）
@@ -91,16 +92,18 @@ test.beforeEach(async ({ page }) => {
 
 // ─── B1: 書籍削除（Issue #9）─────────────────────────────────────────────────
 
-test.skip("B1-N1: 書籍を削除するとダッシュボードから消える", async ({ page }) => {
+test("B1-N1: 書籍を削除するとダッシュボードから消える", async ({ page }) => {
   await createBookViaUi({ page, title: "削除対象Book", author: "著者A", totalPages: 100 });
   await page.getByRole("link", { name: /削除対象Book/ }).click();
+
   await page.getByTestId("delete-book-button").click();
   await page.getByTestId("delete-confirm-button").click();
+
   await expect(page).toHaveURL("/");
   await expect(page.getByTestId("section-reading")).not.toContainText("削除対象Book");
 });
 
-test.skip("B1-N2: 削除後に関連進捗ログも消える", async ({ page }) => {
+test("B1-N2: 削除後に関連進捗ログも消える", async ({ page }) => {
   const payload: SeedPayload = {
     version: 1,
     books: [
@@ -134,12 +137,34 @@ test.skip("B1-N2: 削除後に関連進捗ログも消える", async ({ page }) 
   expect(orphanLogs).toHaveLength(0);
 });
 
-test.skip("B1-S1: 削除確認ダイアログでキャンセルすると削除されない", async ({ page }) => {
+test("B1-S1: 削除確認ダイアログでキャンセルすると削除されない", async ({ page }) => {
   await createBookViaUi({ page, title: "キャンセルBook", author: "著者B", totalPages: 100 });
   await page.getByRole("link", { name: /キャンセルBook/ }).click();
+
   await page.getByTestId("delete-book-button").click();
+  await expect(page.getByTestId("delete-confirm-dialog")).toBeVisible();
+
   await page.getByTestId("delete-cancel-button").click();
-  await expect(page.getByRole("link", { name: /キャンセルBook/ })).toBeVisible();
+
+  // 確認パネルが閉じ、詳細ページに留まる（遷移しない）。
+  await expect(page.getByTestId("delete-confirm-dialog")).toBeHidden();
+  await expect(page.getByTestId("book-title")).toHaveText("キャンセルBook");
+
+  // 期待結果の正は「一覧に書籍が残る」（docs/08 B1-S1）。詳細ページの表示だけでは
+  // 削除されていないことの証明にならないため、ダッシュボードまで戻って確認する。
+  await page.getByRole("link", { name: "ダッシュボードへ戻る" }).first().click();
+  await expect(page.getByTestId("section-reading")).toContainText("キャンセルBook");
+});
+
+test("B1-S2: 削除確認を出さずにページを離れても削除されない", async ({ page }) => {
+  await createBookViaUi({ page, title: "未確定Book", author: "著者C", totalPages: 100 });
+  await page.getByRole("link", { name: /未確定Book/ }).click();
+
+  // 削除ボタンは確認パネルを開くだけで、それ自体は削除を実行しない。
+  await page.getByTestId("delete-book-button").click();
+  await page.goto("/");
+
+  await expect(page.getByTestId("section-reading")).toContainText("未確定Book");
 });
 
 // ─── B3: 著者任意入力（Issue #11）────────────────────────────────────────────

@@ -99,6 +99,63 @@ describe("updateBook", () => {
   });
 });
 
+describe("deleteBook", () => {
+  // --- 正常系 ---
+  it("削除した書籍は一覧・取得から消える", async () => {
+    const book = await repo.createBook(baseInput);
+    await repo.deleteBook(book.id);
+
+    expect(await repo.listBooks()).toHaveLength(0);
+    expect(await repo.getBook(book.id)).toBeNull();
+  });
+
+  it("関連する進捗ログも同時に消える", async () => {
+    const book = await repo.createBook(baseInput);
+    await repo.addProgressLog(book.id, { page: 10, status: "reading" });
+    expect(await repo.listProgressLogs(book.id)).toHaveLength(1);
+
+    await repo.deleteBook(book.id);
+
+    // 孤児ログが payload に残っていないことを、生ペイロードで直接確認する。
+    expect(repo.readRawPayload().progressLogs.filter((log) => log.bookId === book.id)).toEqual([]);
+  });
+
+  it("感想付きの書籍も削除できる", async () => {
+    const book = await repo.createBook(baseInput);
+    await repo.updateBook(book.id, { currentPage: 100 });
+    await repo.saveReflection(book.id, { learning: "学び", action: "", quote: "" });
+
+    await repo.deleteBook(book.id);
+
+    expect(await repo.getBook(book.id)).toBeNull();
+  });
+
+  it("他の書籍とその進捗ログは残る", async () => {
+    const target = await repo.createBook({ ...baseInput, title: "消す本" });
+    const survivor = await repo.createBook({ ...baseInput, title: "残す本" });
+    await repo.addProgressLog(target.id, { page: 10, status: "reading" });
+    await repo.addProgressLog(survivor.id, { page: 20, status: "reading" });
+
+    await repo.deleteBook(target.id);
+
+    expect((await repo.listBooks()).map((b) => b.title)).toEqual(["残す本"]);
+    expect(await repo.listProgressLogs(survivor.id)).toHaveLength(1);
+  });
+
+  // --- 異常系 ---
+  it("存在しない書籍の削除はエラー", async () => {
+    await expect(repo.deleteBook("missing")).rejects.toThrow("対象の書籍が見つかりません。");
+  });
+
+  it("削除に失敗しても既存データを壊さない", async () => {
+    const book = await repo.createBook(baseInput);
+
+    await expect(repo.deleteBook("missing")).rejects.toThrow();
+
+    expect(await repo.getBook(book.id)).not.toBeNull();
+  });
+});
+
 describe("addProgressLog", () => {
   // --- 正常系 ---
   it("進捗を記録して currentPage を更新し、履歴を1件追加する", async () => {
