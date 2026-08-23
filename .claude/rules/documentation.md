@@ -29,9 +29,18 @@ globs:
 | 業務ルール / バリデーション仕様の変更 | docs/03-functional-specification.md、docs/06-security-specification.md |
 | E2E / テスト仕様の変更 | docs/08-test-specification.md |
 | 開発ルール / 規約の変更 | CLAUDE.md、.claude/rules/ |
+| ルールファイルの追加 / 削除 / 改名 / 適用範囲変更 | CLAUDE.md の Rules テーブル（索引の正本）、AGENTS.md（参照先・運用方針が変わる場合のみ） |
 | 事故・障害の発生、レビュー指摘での誤り判明、原因判明後のハマり | docs/lessons-learned.md（`lessons-learned.md` の記録トリガー） |
 
 該当する変更がない場合はスキップする。
+
+## AI エージェント向け入口の同期
+
+Claude Code（`CLAUDE.md`）と Codex（`AGENTS.md`）で入口ファイルは分かれるが、**ルール本文の正本は `.claude/rules/` の 1 箇所**とする。
+
+- **入口ファイルにルール本文を複製しない。** 複製した瞬間、片方だけ更新される事故が起きる。
+- **ルール索引（一覧表）の正本は `CLAUDE.md` の「Rules」テーブル**とする。`AGENTS.md` は一覧を持たず、この表を参照する。
+- **入口ファイルの更新が要るのは、ルールファイルの追加・削除・改名・適用範囲変更のときだけ。** ルール本文だけの変更では不要。
 
 ## 補足
 

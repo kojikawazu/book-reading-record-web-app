@@ -115,6 +115,19 @@ flowchart TD
 
 優先順位（矛盾時）: `docs/08-test-specification.md`（受け入れ E2E）> `docs/02-requirements-specification.md` > `docs/03-functional-specification.md`
 
+番号を振らない継続記録として [docs/lessons-learned.md](docs/lessons-learned.md)（教訓ログ）を置いています。連番仕様書が「埋めて完成させる」ものであるのに対し、こちらは事象のたびに追記し続けます。
+
+### AI エージェント向けルール
+
+開発ルールの正本は [.claude/rules/](.claude/rules/) の 1 箇所です。エージェントごとに入口ファイルが分かれます。
+
+| エージェント | 入口 | 備考 |
+|---|---|---|
+| Claude Code | [CLAUDE.md](CLAUDE.md) | ルール索引（一覧表）の正本 |
+| Codex | [AGENTS.md](AGENTS.md) | 一覧は持たず CLAUDE.md を参照。Codex 固有の運用は [.claude/rules/codex.md](.claude/rules/codex.md) |
+
+**入口ファイルにルール本文を複製しません。** ルールファイルの追加・削除・改名・適用範囲変更時のみ、入口を同一の変更セットで同期します（[.claude/rules/documentation.md](.claude/rules/documentation.md)）。
+
 ## Development
 
 ```bash
