@@ -3,6 +3,7 @@ import {
   computeWeeklySummary,
   consumeRecoveryNotice,
   createId,
+  formatAuthor,
   formatProgress,
   getStatusOrder,
   hasKnownTotalPages,
@@ -14,6 +15,7 @@ import {
   sortLogsAsc,
   sortLogsDesc,
 } from "@/lib/helpers";
+import { AUTHOR_UNKNOWN_LABEL } from "@/constants/book";
 import { RECOVERY_NOTICE_KEY, STORAGE_KEY, STORAGE_VERSION } from "@/constants/storage";
 import { Book, ProgressLog } from "@/types/book";
 
@@ -173,6 +175,28 @@ describe("formatProgress", () => {
 
   it("未入力かつ未読なら 0 ページと表示する", () => {
     expect(formatProgress(makeBook({ currentPage: 0, totalPages: 0 }))).toBe("0 ページ");
+  });
+});
+
+describe("formatAuthor", () => {
+  // --- 正常系 ---
+  it("著者が設定済みならそのまま返す", () => {
+    expect(formatAuthor("Dustin Boswell")).toBe("Dustin Boswell");
+  });
+
+  // --- 準正常系 ---
+  it("空文字なら未設定ラベルを返す", () => {
+    expect(formatAuthor("")).toBe(AUTHOR_UNKNOWN_LABEL);
+  });
+
+  it("空白のみなら未設定ラベルを返す", () => {
+    // 入力を trim せずに保存した既存データでも、表示だけは未設定へ寄せる。
+    expect(formatAuthor("   ")).toBe(AUTHOR_UNKNOWN_LABEL);
+  });
+
+  it("前後に空白がある著者名は元の値をそのまま返す", () => {
+    // 表示整形の責務は「未設定の代替」だけで、trim は保存側（Repository）が担う。
+    expect(formatAuthor(" Boswell ")).toBe(" Boswell ");
   });
 });
 

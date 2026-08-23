@@ -7,7 +7,12 @@ import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/constants/book";
-import { formatProgress, isCompletedByProgress, reflectionIsMissing } from "@/lib/helpers";
+import {
+  formatAuthor,
+  formatProgress,
+  isCompletedByProgress,
+  reflectionIsMissing,
+} from "@/lib/helpers";
 import { repository } from "@/repositories/repository-instance";
 import { Book, BookStatus, ProgressLog } from "@/types/book";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -246,7 +251,7 @@ export default function BookDetailPage() {
         >
           {book.title}
         </h2>
-        <p className="text-sm text-[color:var(--foreground)]/68">{book.author}</p>
+        <p className="text-sm text-[color:var(--foreground)]/68">{formatAuthor(book.author)}</p>
         <p className="mt-3 text-sm text-[color:var(--foreground)]/80">
           {FORMAT_LABELS[book.format]} / ステータス: {STATUS_LABELS[book.status]}
         </p>

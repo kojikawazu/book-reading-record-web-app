@@ -26,3 +26,12 @@ export const STATUS_ORDER: BookStatus[] = ["not_started", "reading", "paused", "
  * `hasKnownTotalPages` / `isCompletedByProgress` を経由して判定する。
  */
 export const TOTAL_PAGES_UNKNOWN = 0;
+
+/**
+ * 著者が未設定の書籍に表示するラベル。
+ *
+ * `BookRecordBooks.author` は NOT NULL のため、null ではなく空文字を「未設定」として扱う
+ * （`TOTAL_PAGES_UNKNOWN` と同じ理由）。表示への変換は `lib/helpers.ts` の
+ * `formatAuthor` を経由し、一覧と詳細で文言がずれないようにする。
+ */
+export const AUTHOR_UNKNOWN_LABEL = "著者不明";

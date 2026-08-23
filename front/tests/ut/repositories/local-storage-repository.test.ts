@@ -36,6 +36,12 @@ describe("createBook", () => {
     expect(book.genre).toBeUndefined();
   });
 
+  it("空 author は空文字のまま保持する（undefined にしない）", async () => {
+    // author は DB が NOT NULL のため、genre と違い undefined へ落とさず空文字で「未設定」を表す。
+    const book = await repo.createBook({ ...baseInput, author: "   " });
+    expect(book.author).toBe("");
+  });
+
   it("作成した書籍は一覧・取得で参照できる", async () => {
     const created = await repo.createBook(baseInput);
     expect(await repo.listBooks()).toHaveLength(1);
@@ -69,6 +75,14 @@ describe("updateBook", () => {
     expect(reread.status).toBe("reading");
     expect(reread.completedAt).toBeUndefined();
     expect(reread.reflection?.learning).toBe("学び");
+  });
+
+  it("author に空文字を渡すと未設定へ戻せる", async () => {
+    const book = await repo.createBook(baseInput);
+    expect(book.author).toBe("Boswell");
+
+    const updated = await repo.updateBook(book.id, { author: "" });
+    expect(updated.author).toBe("");
   });
 
   // --- 準正常系 ---

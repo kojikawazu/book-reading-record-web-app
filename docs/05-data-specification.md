@@ -31,7 +31,7 @@
 
 - `id: string`
 - `title: string`
-- `author: string`
+- `author: string`（空文字は「未設定」。`constants/book.ts` の `AUTHOR_UNKNOWN_LABEL` で表示する）
 - `genre?: string`
 - `format: "paper" | "ebook" | "audio"`
 - `totalPages: number`（`0` は「未入力」。`constants/book.ts` の `TOTAL_PAGES_UNKNOWN`）

@@ -6,7 +6,7 @@
  * カバレッジ:
  *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1（未実装・skip）
  *   B2: 書籍イメージ（Issue #10）→ UI・外部URL表示が絡むため、Issue #10 実装時に別途追加する
- *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1（未実装・skip）
+ *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1, B3-S2（**実装済み・有効**）
  *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3（**実装済み・有効**）
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -144,28 +144,31 @@ test.skip("B1-S1: 削除確認ダイアログでキャンセルすると削除�
 
 // ─── B3: 著者任意入力（Issue #11）────────────────────────────────────────────
 
-test.skip("B3-N1: 著者空でも書籍登録できる", async ({ page }) => {
-  await page.goto("/");
-  await page.getByTestId("add-book-link").click();
-  await page.getByTestId("book-title-input").fill("著者なしBook");
-  // 著者入力欄は空のまま
-  await page.getByTestId("book-total-pages-input").fill("100");
-  await page.getByTestId("book-status-select").selectOption("reading");
-  await page.getByTestId("book-save-button").click();
-  await expect(page).toHaveURL("/");
-  await expect(page.getByTestId("section-reading")).toContainText("著者なしBook");
+test("B3-N1: 著者空でも書籍登録できる", async ({ page }) => {
+  // 著者入力欄は空のまま（createBookViaUi の author 既定値が "" のため入力しない）
+  await createBookViaUi({ page, title: "著者なしBook", totalPages: 100 });
+
+  const section = page.getByTestId("section-reading");
+  await expect(section).toContainText("著者なしBook");
+  // 著者欄は空にせず代替ラベルを出す（欄が消えるとカードの高さが揃わない）。
+  await expect(section).toContainText("著者不明");
 });
 
-test.skip("B3-S1: 著者空の書籍詳細ページでレイアウト崩れがない", async ({ page }) => {
-  await page.goto("/");
-  await page.getByTestId("add-book-link").click();
-  await page.getByTestId("book-title-input").fill("著者なし詳細Book");
-  await page.getByTestId("book-total-pages-input").fill("100");
-  await page.getByTestId("book-status-select").selectOption("reading");
-  await page.getByTestId("book-save-button").click();
+test("B3-S1: 著者空の書籍詳細ページでレイアウト崩れがない", async ({ page }) => {
+  await createBookViaUi({ page, title: "著者なし詳細Book", totalPages: 100 });
   await page.getByRole("link", { name: /著者なし詳細Book/ }).click();
+
   // 詳細ページが正常表示（クラッシュしない）
-  await expect(page.getByText("著者なし詳細Book")).toBeVisible();
+  await expect(page.getByTestId("book-title")).toHaveText("著者なし詳細Book");
+  await expect(page.getByText("著者不明")).toBeVisible();
+});
+
+test("B3-S2: 著者ありの書籍は代替ラベルを出さない（既存データの回帰確認）", async ({ page }) => {
+  await createBookViaUi({ page, title: "著者ありBook", author: "Boswell", totalPages: 100 });
+
+  const section = page.getByTestId("section-reading");
+  await expect(section).toContainText("Boswell");
+  await expect(section).not.toContainText("著者不明");
 });
 
 // ─── B4: 総ページ数未入力でも完読許可（Issue #12）────────────────────────────

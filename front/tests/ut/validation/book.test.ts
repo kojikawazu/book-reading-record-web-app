@@ -58,6 +58,12 @@ describe("validateBookForm", () => {
     expect(errors).toEqual({});
   });
 
+  it("author が空・空白のみ（未設定）なら許容する", () => {
+    // 著者が不明な書籍も登録できるようにするための仕様（Issue #11）。
+    expect(validateBookForm({ ...validBookInput, author: "" }).author).toBeUndefined();
+    expect(validateBookForm({ ...validBookInput, author: "   " }).author).toBeUndefined();
+  });
+
   // --- 準正常系 ---
   it("title が空ならエラー", () => {
     expect(validateBookForm({ ...validBookInput, title: "   " }).title).toBe(
@@ -69,9 +75,10 @@ describe("validateBookForm", () => {
     expect(validateBookForm({ ...validBookInput, title: "a".repeat(201) }).title).toBeDefined();
   });
 
-  it("author が空・121 文字ならエラー", () => {
-    expect(validateBookForm({ ...validBookInput, author: "" }).author).toBeDefined();
-    expect(validateBookForm({ ...validBookInput, author: "a".repeat(121) }).author).toBeDefined();
+  it("author が 121 文字ならエラー", () => {
+    expect(validateBookForm({ ...validBookInput, author: "a".repeat(121) }).author).toBe(
+      "著者は120文字以内で入力してください。"
+    );
   });
 
   it("genre が 81 文字ならエラー", () => {

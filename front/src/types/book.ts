@@ -22,6 +22,7 @@ export type Reflection = {
 export type Book = {
   id: string;
   title: string;
+  /** 著者。任意入力のため、未設定は空文字で保持する（表示は helpers.formatAuthor）。 */
   author: string;
   genre?: string;
   format: BookFormat;
@@ -61,6 +62,7 @@ export type StoragePayload = {
 /** 書籍作成の入力。初期ステータスに `completed` は指定できない（型で除外）。 */
 export type CreateBookInput = {
   title: string;
+  /** 著者。空文字を渡すと「未設定」として登録する。 */
   author: string;
   genre?: string;
   format: BookFormat;

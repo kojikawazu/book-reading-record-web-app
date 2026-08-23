@@ -121,8 +121,9 @@ const validateBookDraft = (
     errors.title = "タイトルは1〜200文字で入力してください。";
   }
 
-  if (input.author.trim().length < 1 || input.author.trim().length > 120) {
-    errors.author = "著者は1〜120文字で入力してください。";
+  // 未入力（空欄）を許容する。クライアント側の validateBookForm と同じ規則。
+  if (input.author.trim().length > 120) {
+    errors.author = "著者は120文字以内で入力してください。";
   }
 
   if ((input.genre ?? "").trim().length > 80) {
