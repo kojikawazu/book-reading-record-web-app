@@ -280,7 +280,8 @@ test("Case 8: 書籍登録バリデーション（総ページ数）", async ({ 
 
   await page.getByTestId("book-title-input").fill("Bad Pages");
   await page.getByTestId("book-author-input").fill("Eve");
-  await page.getByTestId("book-total-pages-input").fill("0");
+  // 0 は「未入力」として許容されるようになったため、上限超過で検証違反を作る（Issue #12）。
+  await page.getByTestId("book-total-pages-input").fill("100001");
   await page.getByTestId("book-save-button").click();
 
   await expect(page.getByTestId("error-total-pages")).toBeVisible();

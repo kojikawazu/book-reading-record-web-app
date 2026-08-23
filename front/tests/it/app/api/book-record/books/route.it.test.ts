@@ -101,10 +101,20 @@ describe("IT: /api/book-record/books（実 Postgres）", () => {
     await expect(res.json()).resolves.toEqual({ message: "書籍作成リクエストが不正です。" });
   });
 
-  it("リポジトリ検証違反（totalPages=0）は 400 で DB に残らない", async () => {
-    const res = await POST(jsonReq({ ...validBookBody, totalPages: 0 }));
+  it("リポジトリ検証違反（totalPages=100001）は 400 で DB に残らない", async () => {
+    // totalPages=0 は「未入力」として許容されるようになったため、上限超過で検証違反を作る。
+    const res = await POST(jsonReq({ ...validBookBody, totalPages: 100001 }));
     expect(res.status).toBe(400);
     const { books } = await (await GET()).json();
     expect(books).toEqual([]);
+  });
+
+  it("totalPages=0（未入力）は受け付けて DB に保存される", async () => {
+    const res = await POST(jsonReq({ ...validBookBody, totalPages: 0 }));
+    expect(res.status).toBe(201);
+
+    const { books } = await (await GET()).json();
+    expect(books).toHaveLength(1);
+    expect(books[0].totalPages).toBe(0);
   });
 });

@@ -1,3 +1,5 @@
+import { TOTAL_PAGES_UNKNOWN } from "@/constants/book";
+import { hasKnownTotalPages } from "@/lib/helpers";
 import { BookStatus, ReflectionInput } from "@/types/book";
 
 /** フィールド名 → エラーメッセージ（先頭1件）のマップ。空なら検証成功。 */
@@ -27,7 +29,7 @@ export const normalizeTags = (raw: string): string[] => {
  * @param input.title - タイトル
  * @param input.author - 著者
  * @param input.genre - ジャンル
- * @param input.totalPages - 総ページ数
+ * @param input.totalPages - 総ページ数（`TOTAL_PAGES_UNKNOWN` は未入力）
  * @param input.tags - 正規化済みタグ配列
  * @param input.status - 初期ステータス
  * @returns フィールド別エラー（問題なければ空オブジェクト）
@@ -54,8 +56,12 @@ export const validateBookForm = (input: {
     errors.genre = "ジャンルは80文字以内で入力してください。";
   }
 
-  if (!Number.isInteger(input.totalPages) || !within(input.totalPages, 1, 100000)) {
-    errors.totalPages = "総ページ数は1〜100000の整数で入力してください。";
+  // 未入力（TOTAL_PAGES_UNKNOWN）を許容する。総ページ数が不明な書籍も登録できるようにするため。
+  if (
+    !Number.isInteger(input.totalPages) ||
+    (input.totalPages !== TOTAL_PAGES_UNKNOWN && !within(input.totalPages, 1, 100000))
+  ) {
+    errors.totalPages = "総ページ数は1〜100000の整数で入力してください（不明な場合は空欄）。";
   }
 
   if (input.tags.length > 10) {
@@ -97,7 +103,13 @@ export const validateProgressForm = (input: {
     errors.memo = "メモは5000文字以内で入力してください。";
   }
 
-  if (input.status === "completed" && input.page < input.totalPages) {
+  // 総ページ数が未入力の書籍は分母を持たないため、到達ページとの突合を行わない。
+  // ユーザーが明示的に完読を選べるようにする（docs/03 第2部 1）。
+  if (
+    input.status === "completed" &&
+    hasKnownTotalPages(input.totalPages) &&
+    input.page < input.totalPages
+  ) {
     errors.status = "完読にするには到達ページを総ページ以上にしてください。";
   }
 

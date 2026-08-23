@@ -80,9 +80,14 @@ describe("validateBookForm", () => {
     );
   });
 
-  it("totalPages が 0・100001 ならエラー", () => {
-    expect(validateBookForm({ ...validBookInput, totalPages: 0 }).totalPages).toBeDefined();
+  it("totalPages が 0（未入力）なら許容する", () => {
+    // 総ページ数が不明な書籍も登録できるようにするための仕様（docs/03 第2部 1）。
+    expect(validateBookForm({ ...validBookInput, totalPages: 0 }).totalPages).toBeUndefined();
+  });
+
+  it("totalPages が 100001・負数ならエラー", () => {
     expect(validateBookForm({ ...validBookInput, totalPages: 100001 }).totalPages).toBeDefined();
+    expect(validateBookForm({ ...validBookInput, totalPages: -1 }).totalPages).toBeDefined();
   });
 
   it("totalPages が非整数ならエラー", () => {
@@ -137,6 +142,16 @@ describe("validateProgressForm", () => {
 
   it("memo が 5001 文字ならエラー", () => {
     expect(validateProgressForm({ ...base, memo: "m".repeat(5001) }).memo).toBeDefined();
+  });
+
+  it("総ページ数が未入力なら page に関わらず completed を許容する", () => {
+    // 分母が無い書籍は到達ページと突合できないため、明示的な完読指定を通す（docs/03 第2部 1）。
+    expect(validateProgressForm({ ...base, totalPages: 0, page: 0, status: "completed" })).toEqual(
+      {}
+    );
+    expect(validateProgressForm({ ...base, totalPages: 0, page: 12, status: "completed" })).toEqual(
+      {}
+    );
   });
 
   // --- 異常系 ---

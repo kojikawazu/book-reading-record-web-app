@@ -173,3 +173,60 @@ describe("searchBooks", () => {
     expect(await repo.searchBooks("zzz-none")).toEqual([]);
   });
 });
+
+describe("総ページ数が未入力（TOTAL_PAGES_UNKNOWN）の書籍", () => {
+  /** 総ページ数を未入力にした書籍を 1 冊作る。 */
+  const createUnknownPagesBook = () => repo.createBook({ ...baseInput, totalPages: 0 });
+
+  // --- 正常系 ---
+  it("総ページ数 0 で書籍を登録できる", async () => {
+    const book = await createUnknownPagesBook();
+    expect(book.totalPages).toBe(0);
+    expect(book.status).toBe("reading");
+  });
+
+  it("明示的に completed へ更新できる（到達ページを問わない）", async () => {
+    const book = await createUnknownPagesBook();
+
+    const updated = await repo.updateBook(book.id, { status: "completed" });
+
+    expect(updated.status).toBe("completed");
+    expect(updated.completedAt).toEqual(expect.any(String));
+  });
+
+  it("completed の進捗ログを記録できる", async () => {
+    const book = await createUnknownPagesBook();
+
+    const { book: updated } = await repo.addProgressLog(book.id, {
+      page: 12,
+      memo: "",
+      status: "completed",
+    });
+
+    expect(updated.status).toBe("completed");
+    expect(updated.currentPage).toBe(12);
+  });
+
+  // --- 異常系: 自動確定に巻き込まれないこと（最重要の回帰） ---
+  it("進捗を記録しても自動で完読にならない", async () => {
+    const book = await createUnknownPagesBook();
+
+    const { book: updated } = await repo.addProgressLog(book.id, {
+      page: 0,
+      memo: "",
+      status: "reading",
+    });
+
+    // 0 を分母とみなすと page >= totalPages が常に成立し、全書籍が完読になってしまう。
+    expect(updated.status).toBe("reading");
+  });
+
+  it("currentPage を更新しても自動で完読にならない", async () => {
+    const book = await createUnknownPagesBook();
+
+    const updated = await repo.updateBook(book.id, { currentPage: 50 });
+
+    expect(updated.status).toBe("reading");
+    expect(updated.completedAt).toBeUndefined();
+  });
+});

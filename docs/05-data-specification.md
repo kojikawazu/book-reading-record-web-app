@@ -34,7 +34,7 @@
 - `author: string`
 - `genre?: string`
 - `format: "paper" | "ebook" | "audio"`
-- `totalPages: number`
+- `totalPages: number`（`0` は「未入力」。`constants/book.ts` の `TOTAL_PAGES_UNKNOWN`）
 - `currentPage: number`
 - `tags: string[]`
 - `status: "not_started" | "reading" | "paused" | "completed"`

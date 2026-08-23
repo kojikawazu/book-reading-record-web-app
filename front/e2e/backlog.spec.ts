@@ -1,14 +1,13 @@
 /**
  * バックログ B1〜B4 の E2E テスト
  *
- * 各機能が未実装のため全ケース test.skip でマーク。
- * 機能実装（Issue #9〜#12）完了後に test.skip → test に変更して有効化する。
+ * 未実装の機能は test.skip でマークし、実装完了時に test へ変更して有効化する。
  *
  * カバレッジ:
- *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1
+ *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1（未実装・skip）
  *   B2: 書籍イメージ（Issue #10）→ UI・外部URL表示が絡むため、Issue #10 実装時に別途追加する
- *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1
- *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3
+ *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1（未実装・skip）
+ *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3（**実装済み・有効**）
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -171,7 +170,7 @@ test.skip("B3-S1: 著者空の書籍詳細ページでレイアウト崩れが�
 
 // ─── B4: 総ページ数未入力でも完読許可（Issue #12）────────────────────────────
 
-test.skip("B4-N1: 総ページ数0の書籍でもステータス=完読で保存できる", async ({ page }) => {
+test("B4-N1: 総ページ数0の書籍でもステータス=完読で保存できる", async ({ page }) => {
   const payload: SeedPayload = {
     version: 1,
     books: [
@@ -198,7 +197,15 @@ test.skip("B4-N1: 総ページ数0の書籍でもステータス=完読で保存
   await expect(page.getByText("ステータス: 完読")).toBeVisible();
 });
 
-test.skip("B4-N2: 総ページ数0の完読後に感想入力セクションが表示される", async ({ page }) => {
+test("B4-N4: 総ページ数を空欄のまま書籍登録できる", async ({ page }) => {
+  await createBookViaUi({ page, title: "空欄ページBook", author: "著者" });
+
+  await expect(page.getByTestId("section-reading")).toContainText("空欄ページBook");
+  // 分母が無いため進捗率は表示せず、到達ページのみを示す（docs/03 第2部 6）。
+  await expect(page.getByTestId("section-reading")).toContainText("0 ページ");
+});
+
+test("B4-N2: 総ページ数0の完読後に感想入力セクションが表示される", async ({ page }) => {
   const payload: SeedPayload = {
     version: 1,
     books: [
@@ -220,11 +227,16 @@ test.skip("B4-N2: 総ページ数0の完読後に感想入力セクションが�
   };
   await seedStorage(page, payload);
   await page.goto("/");
-  await page.getByRole("link", { name: /ページなし完読Book/ }).click();
+  // 完読済みかつ感想未記入の書籍は「完読」と「感想未記入」の両セクションに表示される
+  // （docs/03 第1部 ダッシュボード）。どちらから辿っても同じ詳細ページへ遷移する。
+  await page
+    .getByRole("link", { name: /ページなし完読Book/ })
+    .first()
+    .click();
   await expect(page.getByTestId("reflection-learning-input")).toBeVisible();
 });
 
-test.skip("B4-N3: 総ページ数0の完読書籍で再読ボタンが動作する", async ({ page }) => {
+test("B4-N3: 総ページ数0の完読書籍で再読ボタンが動作する", async ({ page }) => {
   const payload: SeedPayload = {
     version: 1,
     books: [
@@ -246,7 +258,12 @@ test.skip("B4-N3: 総ページ数0の完読書籍で再読ボタンが動作す�
   };
   await seedStorage(page, payload);
   await page.goto("/");
-  await page.getByRole("link", { name: /ページなし再読Book/ }).click();
+  // 完読済みかつ感想未記入の書籍は「完読」と「感想未記入」の両セクションに表示される
+  // （docs/03 第1部 ダッシュボード）。どちらから辿っても同じ詳細ページへ遷移する。
+  await page
+    .getByRole("link", { name: /ページなし再読Book/ })
+    .first()
+    .click();
   await page.getByTestId("reread-button").click();
   await page.getByRole("link", { name: "ダッシュボードへ戻る" }).first().click();
   await expect(page.getByTestId("section-reading")).toContainText("ページなし再読Book");

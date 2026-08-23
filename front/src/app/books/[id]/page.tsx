@@ -7,24 +7,11 @@ import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS } from "@/constants/book";
-import { reflectionIsMissing } from "@/lib/helpers";
+import { formatProgress, isCompletedByProgress, reflectionIsMissing } from "@/lib/helpers";
 import { repository } from "@/repositories/repository-instance";
 import { Book, BookStatus, ProgressLog } from "@/types/book";
 import { useAuthSession } from "@/hooks/use-auth-session";
 import { validateProgressForm, ValidationErrors } from "@/validation/book";
-
-/**
- * 進捗率（%・小数第1位四捨五入）を求める。総ページが 0 以下なら 0 を返す。
- *
- * @param book - 対象書籍
- * @returns 0〜100 の進捗率
- */
-const toProgressRate = (book: Book): number => {
-  if (book.totalPages <= 0) {
-    return 0;
-  }
-  return Math.round((book.currentPage / book.totalPages) * 1000) / 10;
-};
 
 /**
  * 書籍詳細・進捗記録ページ（`/books/[id]`）。進捗記録・完読時感想・再読を扱う。
@@ -62,7 +49,11 @@ export default function BookDetailPage() {
       return book.status === "completed";
     }
 
-    return parsedPage >= book.totalPages || status === "completed" || book.status === "completed";
+    return (
+      isCompletedByProgress(parsedPage, book.totalPages) ||
+      status === "completed" ||
+      book.status === "completed"
+    );
   }, [book, page, status]);
 
   const load = async () => {
@@ -259,9 +250,7 @@ export default function BookDetailPage() {
         <p className="mt-3 text-sm text-[color:var(--foreground)]/80">
           {FORMAT_LABELS[book.format]} / ステータス: {STATUS_LABELS[book.status]}
         </p>
-        <p className="text-sm text-[color:var(--foreground)]/80">
-          {book.currentPage} / {book.totalPages} ({toProgressRate(book)}%)
-        </p>
+        <p className="text-sm text-[color:var(--foreground)]/80">{formatProgress(book)}</p>
         <p className="mt-2 inline-flex rounded-full bg-[color:var(--background-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)]/76">
           感想状態: {reflectionIsMissing(book) ? "未記入" : "記入済み"}
         </p>

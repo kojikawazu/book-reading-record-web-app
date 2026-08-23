@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { OrganicShell } from "@/components/organic-shell";
 import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/constants/book";
-import { computeWeeklySummary, consumeRecoveryNotice, reflectionIsMissing } from "@/lib/helpers";
+import {
+  computeWeeklySummary,
+  consumeRecoveryNotice,
+  formatProgress,
+  reflectionIsMissing,
+} from "@/lib/helpers";
 import { repository } from "@/repositories/repository-instance";
 import { Book, BookStatus, ProgressLog } from "@/types/book";
 
@@ -53,20 +58,6 @@ const filterBooksByQuery = (books: Book[], query: string): Book[] => {
   });
 };
 
-/**
- * 進捗率（%・小数第1位四捨五入）を求める。総ページが 0 以下なら 0 を返す。
- *
- * @param book - 対象書籍
- * @returns 0〜100 の進捗率
- */
-const progressRate = (book: Book): number => {
-  if (book.totalPages <= 0) {
-    return 0;
-  }
-
-  return Math.round((book.currentPage / book.totalPages) * 1000) / 10;
-};
-
 /** 書籍1冊分のカード。詳細ページへのリンクと進捗サマリーを表示する。 */
 const BookCard = ({ book }: { book: Book }) => {
   return (
@@ -83,8 +74,7 @@ const BookCard = ({ book }: { book: Book }) => {
       </div>
       <p className="mt-1 text-sm text-[color:var(--foreground)]/70">{book.author}</p>
       <p className="mt-2 text-xs text-[color:var(--foreground)]/75">
-        {FORMAT_LABELS[book.format]} / {book.currentPage} / {book.totalPages} ({progressRate(book)}
-        %)
+        {FORMAT_LABELS[book.format]} / {formatProgress(book)}
       </p>
       <p className="mt-1 text-xs text-[color:var(--foreground)]/55">
         最終更新: {new Date(book.updatedAt).toLocaleString()}
@@ -162,7 +152,12 @@ export default function DashboardPage() {
     void load();
   }, []);
 
-  const validBooks = useMemo(() => books.filter((book) => book.totalPages > 0), [books]);
+  // 総ページ数 0 は「未入力」であり不正ではない（docs/03 第2部 6）。
+  // localStorage 破損などで負値・非整数が入った場合だけ除外する。
+  const validBooks = useMemo(
+    () => books.filter((book) => Number.isInteger(book.totalPages) && book.totalPages >= 0),
+    [books]
+  );
   const invalidBookCount = books.length - validBooks.length;
 
   const filteredBooks = useMemo(() => filterBooksByQuery(validBooks, query), [validBooks, query]);

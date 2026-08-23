@@ -17,3 +17,12 @@ export const FORMAT_LABELS: Record<BookFormat, string> = {
 
 /** ダッシュボードのセクション表示順に対応するステータス並び。 */
 export const STATUS_ORDER: BookStatus[] = ["not_started", "reading", "paused", "completed"];
+
+/**
+ * 総ページ数が未入力であることを表す値。
+ *
+ * `BookRecordBooks.total_pages` は NOT NULL のため、null ではなく `0` を「不明」として扱う。
+ * 業務ルール（完読の自動確定・進捗率の表示）は `lib/helpers.ts` の
+ * `hasKnownTotalPages` / `isCompletedByProgress` を経由して判定する。
+ */
+export const TOTAL_PAGES_UNKNOWN = 0;

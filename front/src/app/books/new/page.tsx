@@ -6,7 +6,7 @@ import { FormEvent, useState } from "react";
 import { AuthRequiredPanel } from "@/components/auth-required-panel";
 import { GlobalLoadingScreen } from "@/components/global-loading-screen";
 import { OrganicShell } from "@/components/organic-shell";
-import { FORMAT_LABELS, STATUS_LABELS } from "@/constants/book";
+import { FORMAT_LABELS, STATUS_LABELS, TOTAL_PAGES_UNKNOWN } from "@/constants/book";
 import { repository } from "@/repositories/repository-instance";
 import { BookFormat, BookStatus } from "@/types/book";
 import { useAuthSession } from "@/hooks/use-auth-session";
@@ -24,7 +24,8 @@ export default function NewBookPage() {
   const [author, setAuthor] = useState("");
   const [genre, setGenre] = useState("");
   const [format, setFormat] = useState<BookFormat>("paper");
-  const [totalPages, setTotalPages] = useState("0");
+  // 空欄＝未入力（TOTAL_PAGES_UNKNOWN）。総ページ数が不明な書籍も登録できるようにする。
+  const [totalPages, setTotalPages] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState<BookStatus>("not_started");
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -38,7 +39,8 @@ export default function NewBookPage() {
       return;
     }
 
-    const parsedTotalPages = Number(totalPages);
+    // 空欄は未入力として扱う。Number("") は 0 になるが、意図を明示するため分岐で書く。
+    const parsedTotalPages = totalPages.trim() === "" ? TOTAL_PAGES_UNKNOWN : Number(totalPages);
     const normalizedTags = normalizeTags(tags);
 
     const validationErrors = validateBookForm({
@@ -197,13 +199,14 @@ export default function NewBookPage() {
               htmlFor="totalPages"
               className="text-sm font-medium text-[color:var(--foreground)]/80"
             >
-              総ページ数
+              総ページ数（任意）
             </label>
             <input
               id="totalPages"
               data-testid="book-total-pages-input"
               type="number"
               min={1}
+              placeholder="不明な場合は空欄"
               value={totalPages}
               onChange={(event) => setTotalPages(event.target.value)}
               className="field-input"
