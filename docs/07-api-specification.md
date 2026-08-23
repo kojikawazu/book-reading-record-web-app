@@ -23,11 +23,16 @@
 - `listProgressLogs(bookId: string): Promise<ProgressLog[]>`
 - `createBook(input: CreateBookInput): Promise<Book>`
 - `updateBook(bookId: string, patch: UpdateBookInput): Promise<Book>`
+- `deleteBook(bookId: string): Promise<void>`
 - `addProgressLog(bookId: string, input: CreateProgressLogInput): Promise<{ book: Book; log: ProgressLog }>`
 - `saveReflection(bookId: string, input: ReflectionInput): Promise<Book>`
 - `searchBooks(query: string): Promise<Book[]>`
 
 データ型定義は `docs/05-data-specification.md` を参照する。
+
+- **`deleteBook` は成功時に何も返さない（`void`）。** 対象が存在しない場合は例外を投げる（`getBook` のように `null` へ握り潰さない）。「消す対象が無かった」を成功として扱うと、ID 取り違えに気づけないため。
+  - `DELETE /api/book-record/books/[id]` は **`204` ではなく `200` で `{ id }` を返す**。`ApiRepository` の共通ラッパーが全レスポンスで `response.json()` を呼ぶため、本文が無いとパースで失敗する。ステータスの厳密さより、ラッパーに分岐を増やさないことを優先した。
+  - 関連する進捗ログ・感想の削除は、`supabase` 側は DB のカスケード、`local` 側は `StoragePayload` からの明示的な除去が担う（`docs/05-data-specification.md` §8）。
 
 - **感想の保存は `saveReflection` に一本化する。** `updateBook` の `UpdateBookInput` は書籍自身の属性のみを受け取り、`reflection` を含まない。
   - 経緯: 以前は `UpdateBookInput` に `reflection` があったが、UI は渡さず・Route Handler はパースせず・`LocalStorageRepository` は実装していない到達不能な経路だった（`PrismaBookRecordRepository` のみが実装を持っていた）。ドライバ間で挙動が食い違うため削除した。
@@ -48,9 +53,10 @@
 | `POST /api/book-record/books` | 書籍作成 | Bearer 必須 |
 | `GET /api/book-record/books/[id]` | 書籍取得 | 未認証可 |
 | `PATCH /api/book-record/books/[id]` | 書籍更新（再読含む） | Bearer 必須 |
+| `DELETE /api/book-record/books/[id]` | 書籍削除（関連データも削除） | Bearer 必須 |
 | `GET /api/book-record/books/[id]/progress-logs` | 進捗履歴取得 | 未認証可 |
 | `POST /api/book-record/books/[id]/progress-logs` | 進捗記録追加 | Bearer 必須 |
 | `POST /api/book-record/books/[id]/reflection` | 感想保存 | Bearer 必須 |
 
-- 更新系（`POST` / `PATCH`）は `Authorization: Bearer <token>` が必須。未認証は `401` を返す。
+- 更新系（`POST` / `PATCH` / `DELETE`）は `Authorization: Bearer <token>` が必須。未認証は `401` を返す。
 - 認証ガードの実体・トークン検証は `docs/06-security-specification.md` §6 を参照する。

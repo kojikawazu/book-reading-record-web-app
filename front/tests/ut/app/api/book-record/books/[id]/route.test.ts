@@ -2,7 +2,8 @@ import { beforeEach, describe, it, expect, vi } from "vitest";
 import type { NextRequest } from "next/server";
 
 /**
- * `books/[id]` の GET（取得・未認証可）/ PATCH（更新・認証必須）の Route Handler UT。
+ * `books/[id]` の GET（取得・未認証可）/ PATCH（更新・認証必須）/ DELETE（削除・認証必須）の
+ * Route Handler UT。
  * エラークラスは `vi.hoisted` 内に定義し、`instanceof` の identity をルートと共有する。
  */
 const H = vi.hoisted(() => {
@@ -25,6 +26,7 @@ const H = vi.hoisted(() => {
     AuthGuardError,
     getBook: vi.fn(),
     updateBook: vi.fn(),
+    deleteBook: vi.fn(),
     requireAuthenticatedUser: vi.fn(),
   };
 });
@@ -33,6 +35,7 @@ vi.mock("@/lib/server/prisma-book-record-repository", () => ({
   PrismaBookRecordRepository: class {
     getBook = H.getBook;
     updateBook = H.updateBook;
+    deleteBook = H.deleteBook;
   },
   RepositoryValidationError: H.RepositoryValidationError,
   RepositoryNotFoundError: H.RepositoryNotFoundError,
@@ -46,7 +49,7 @@ vi.mock("@/lib/server/auth-guard", () => ({
   isAuthGuardError: (v: unknown) => v instanceof H.AuthGuardError,
 }));
 
-import { GET, PATCH } from "@/app/api/book-record/books/[id]/route";
+import { DELETE, GET, PATCH } from "@/app/api/book-record/books/[id]/route";
 
 // `request.json()` だけを持つ最小の NextRequest。
 const jsonReq = (body: unknown) => ({ json: async () => body }) as unknown as NextRequest;
@@ -56,6 +59,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => {
   H.getBook.mockReset();
   H.updateBook.mockReset();
+  H.deleteBook.mockReset();
   H.requireAuthenticatedUser.mockReset();
   H.requireAuthenticatedUser.mockResolvedValue(undefined);
 });
@@ -132,5 +136,58 @@ describe("PATCH /api/book-record/books/[id]（認証必須）", () => {
     H.updateBook.mockRejectedValue(new Error("db down"));
     const res = await PATCH(jsonReq({ title: "new" }), ctx("b1"));
     expect(res.status).toBe(500);
+  });
+});
+
+describe("DELETE /api/book-record/books/[id]（認証必須）", () => {
+  // --- 正常系 ---
+  it("認証済みなら 200 で削除した ID を返す", async () => {
+    H.deleteBook.mockResolvedValue(undefined);
+    const res = await DELETE(jsonReq(null), ctx("b1"));
+
+    expect(res.status).toBe(200);
+    // 204 にしないのは、ApiRepository の共通ラッパーが必ず JSON をパースするため。
+    await expect(res.json()).resolves.toEqual({ id: "b1" });
+    expect(H.deleteBook).toHaveBeenCalledWith("b1");
+  });
+
+  it("リクエストボディを読まずに削除できる（DELETE はボディを持たない）", async () => {
+    H.deleteBook.mockResolvedValue(undefined);
+    // json() を呼ぶと落ちるリクエストを渡し、ハンドラーがボディを参照しないことを固定する。
+    const noBodyReq = {
+      json: async () => {
+        throw new Error("body should not be read");
+      },
+    } as unknown as NextRequest;
+
+    const res = await DELETE(noBodyReq, ctx("b1"));
+    expect(res.status).toBe(200);
+  });
+
+  // --- 準正常系 ---
+  it("未認証なら 401 で削除しない", async () => {
+    H.requireAuthenticatedUser.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
+    const res = await DELETE(jsonReq(null), ctx("b1"));
+
+    expect(res.status).toBe(401);
+    expect(H.deleteBook).not.toHaveBeenCalled();
+  });
+
+  it("リポジトリが未検出エラーを投げれば 404 に写像する", async () => {
+    H.deleteBook.mockRejectedValue(new H.RepositoryNotFoundError("対象の書籍が見つかりません。"));
+    const res = await DELETE(jsonReq(null), ctx("missing"));
+
+    expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toEqual({ message: "対象の書籍が見つかりません。" });
+  });
+
+  // --- 異常系 ---
+  it("リポジトリが想定外エラーなら 500 で内部情報を漏らさない", async () => {
+    H.deleteBook.mockRejectedValue(new Error('relation "BookRecordBooks" does not exist'));
+    const res = await DELETE(jsonReq(null), ctx("b1"));
+
+    expect(res.status).toBe(500);
+    // Prisma のメッセージをそのまま返さない（api.md「エラーレスポンスも整形する」）。
+    await expect(res.json()).resolves.toEqual({ message: "書籍の削除に失敗しました。" });
   });
 });

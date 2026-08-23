@@ -9,7 +9,8 @@ import { AuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guar
 import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
 import { ctx, jsonReq, validBookBody } from "@tests/support/it-harness";
 import { POST as createBookRoute } from "@/app/api/book-record/books/route";
-import { GET, PATCH } from "@/app/api/book-record/books/[id]/route";
+import { DELETE, GET, PATCH } from "@/app/api/book-record/books/[id]/route";
+import { POST as addProgressLogRoute } from "@/app/api/book-record/books/[id]/progress-logs/route";
 
 const authMock = vi.mocked(requireAuthenticatedUser);
 const MISSING_ID = "00000000-0000-0000-0000-000000000000";
@@ -81,5 +82,45 @@ describe("IT: /api/book-record/books/[id]（実 Postgres）", () => {
 
     const { book } = await (await GET(jsonReq({}), ctx(id))).json();
     expect(book.title).toBe("元タイトル");
+  });
+
+  // 正常系: DELETE
+  it("DELETE は書籍を削除し、以降の GET が 404 になる", async () => {
+    const id = await seedBook();
+
+    const res = await DELETE(jsonReq({}), ctx(id));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ id });
+
+    expect((await GET(jsonReq({}), ctx(id))).status).toBe(404);
+  });
+
+  it("DELETE は進捗ログも消す（エンドポイント経由でのカスケード確認）", async () => {
+    const id = await seedBook();
+    await addProgressLogRoute(jsonReq({ page: 10, memo: "", status: "reading" }), ctx(id));
+
+    await DELETE(jsonReq({}), ctx(id));
+
+    // 書籍ごと消えているため、ログ取得は 404 になる。
+    const res = await GET(jsonReq({}), ctx(id));
+    expect(res.status).toBe(404);
+  });
+
+  // 準正常系: DELETE
+  it("存在しない ID の DELETE は 404", async () => {
+    const res = await DELETE(jsonReq({}), ctx(MISSING_ID));
+    expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toEqual({ message: "対象の書籍が見つかりません。" });
+  });
+
+  it("未認証の DELETE は 401 で DB から消さない", async () => {
+    const id = await seedBook({ title: "消されない本" });
+    authMock.mockRejectedValueOnce(new AuthGuardError("ログインが必要です。", 401));
+
+    const res = await DELETE(jsonReq({}), ctx(id));
+    expect(res.status).toBe(401);
+
+    const { book } = await (await GET(jsonReq({}), ctx(id))).json();
+    expect(book.title).toBe("消されない本");
   });
 });

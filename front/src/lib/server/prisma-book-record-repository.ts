@@ -507,6 +507,28 @@ export class PrismaBookRecordRepository implements BookRepository {
     return toBook(updated);
   }
 
+  /**
+   * 書籍を1冊削除する。進捗ログ・感想は `schema.prisma` の `onDelete: Cascade` により
+   * DB 側で追随して削除される（アプリケーションコードで個別に消さない）。
+   *
+   * @param bookId - 対象書籍の ID
+   * @throws {RepositoryNotFoundError} 書籍が存在しない場合
+   */
+  async deleteBook(bookId: string): Promise<void> {
+    // 存在確認を先に行い、未検出を 404 として返す。delete は対象が無いと P2025 を投げるが、
+    // Prisma のエラーコードに依存するより、契約どおりのエラー型で明示的に落とす方が読みやすい。
+    const existing = await prisma.bookRecordBook.findUnique({
+      where: { id: bookId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new RepositoryNotFoundError("対象の書籍が見つかりません。");
+    }
+
+    await prisma.bookRecordBook.delete({ where: { id: bookId } });
+  }
+
   async searchBooks(query: string): Promise<Book[]> {
     const normalized = query.trim().toLocaleLowerCase();
     const books = await this.listBooks();

@@ -69,6 +69,13 @@ export interface BookRepository {
    */
   saveReflection(bookId: string, input: ReflectionInput): Promise<Book>;
   /**
+   * 書籍を1冊削除する。関連する進捗ログ・感想も併せて削除する（復元手段は持たない）。
+   *
+   * @param bookId - 対象書籍の ID
+   * @throws {Error} 書籍が存在しない場合
+   */
+  deleteBook(bookId: string): Promise<void>;
+  /**
    * タイトル・著者・タグの部分一致で書籍を検索する。
    *
    * @param query - 検索キーワード（空なら全件）

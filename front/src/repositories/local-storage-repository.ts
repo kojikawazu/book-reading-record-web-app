@@ -243,6 +243,30 @@ export class LocalStorageRepository implements BookRepository {
     return copy(book);
   }
 
+  /**
+   * 書籍を1冊削除する。関連する進捗ログも同時に取り除く。
+   *
+   * 感想（reflection）は書籍レコードに内包されているため、書籍を配列から除くだけで消える。
+   * 進捗ログは別配列で bookId 参照のため、明示的に絞り込まないと孤児レコードが残る
+   * （`supabase` 側は schema.prisma の `onDelete: Cascade` が同じ役割を担う）。
+   *
+   * @param bookId - 対象書籍の ID
+   * @throws {Error} 書籍が存在しない場合
+   */
+  async deleteBook(bookId: string): Promise<void> {
+    const payload = parseStoragePayload();
+    const index = payload.books.findIndex((item) => item.id === bookId);
+
+    if (index < 0) {
+      throw new Error("対象の書籍が見つかりません。");
+    }
+
+    payload.books.splice(index, 1);
+    payload.progressLogs = payload.progressLogs.filter((log) => log.bookId !== bookId);
+
+    persistStoragePayload(payload);
+  }
+
   async searchBooks(query: string): Promise<Book[]> {
     const trimmed = query.trim().toLocaleLowerCase();
     const books = await this.listBooks();

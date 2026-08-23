@@ -175,7 +175,8 @@ erDiagram
 - **論理削除（ソフトデリート）は採用せず、物理削除とする。** `deletedAt` 相当のフィールドは持たない。
 - `BookRecordBook` を削除すると、関連する `BookRecordProgressLog` / `BookRecordReflection` は `onDelete: Cascade` により同時に削除される。
 - 理由: 単一ユーザー向け MVP であり、削除の取り消し・監査要件が無い。論理削除は全読み取りクエリへの除外条件付与を要求し、付け忘れが情報漏洩に直結する。
-- `local` モードでも同様に、`StoragePayload` から対象レコードと関連レコードを取り除く。
+- `local` モードでも同様に、`StoragePayload` から対象レコードと関連レコードを取り除く。**感想は書籍レコードに内包されるため書籍を除くだけで消えるが、進捗ログは別配列（`bookId` 参照）のため明示的に除外しないと孤児が残る。**
+- 削除の入口は書籍詳細の削除導線（`deleteBook`）のみ。UI・業務ルールは `docs/03-functional-specification.md` 第2部 §8 を正とする。
 - 方針を変更する場合は本節と `.claude/rules/database.md` を先に更新する（テーブルごとに削除の意味が変わる状態を作らない）。
 
 ## 9. 拡張方針

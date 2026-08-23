@@ -231,3 +231,92 @@ describe("IT: 著者が未設定の書籍（実 Postgres）", () => {
     expect(await repository.listBooks()).toHaveLength(0);
   });
 });
+
+/**
+ * 書籍削除のカスケード（Issue #9）。
+ *
+ * 進捗ログ・感想の削除は `schema.prisma` の `onDelete: Cascade` が担う。**これは DB の
+ * 外部キー制約であり、アプリケーションコードには現れない**。UT ではモックが素通しして
+ * しまい何も証明できないため、実 Postgres に対して検証する。
+ *
+ * `LocalStorageRepository` は同じ結果を手動で作っている（進捗ログを bookId で除外）。
+ * 両ドライバの挙動が揃っていることを、UT と本 IT の対で担保する。
+ */
+describe("IT: 書籍の削除とカスケード（実 Postgres）", () => {
+  // id は @db.Uuid のため、非 UUID 文字列だと未検出ではなく型エラーになる。
+  // 「妥当な形式だが存在しない」ことを表す全ゼロ UUID を使う（既存の異常系テストと揃える）。
+  const MISSING_UUID = "00000000-0000-0000-0000-000000000000";
+
+  /** 書籍 1 冊に進捗ログ 2 件と感想 1 件をぶら下げた状態を作る。 */
+  const seedBookWithChildren = async (title: string): Promise<string> => {
+    const book = await repository.createBook({ ...validBookBody, title });
+    await repository.addProgressLog(book.id, { page: 10, memo: "途中", status: "reading" });
+    await repository.addProgressLog(book.id, { page: 300, memo: "読了", status: "completed" });
+    await repository.saveReflection(book.id, { learning: "学び", action: "行動", quote: "一文" });
+    return book.id;
+  };
+
+  // --- 正常系 ---
+  it("削除した書籍は一覧・取得から消える", async () => {
+    const id = await seedBookWithChildren("削除対象");
+
+    await repository.deleteBook(id);
+
+    expect(await repository.getBook(id)).toBeNull();
+    expect(await repository.listBooks()).toHaveLength(0);
+  });
+
+  it("進捗ログが DB のカスケードで消える", async () => {
+    const id = await seedBookWithChildren("ログ付き");
+    expect(await repository.listProgressLogs(id)).toHaveLength(2);
+
+    await repository.deleteBook(id);
+
+    // 外部キーが Cascade でなければ、ここで制約違反か孤児レコードが残る。
+    expect(await repository.listProgressLogs(id)).toEqual([]);
+  });
+
+  it("感想も DB のカスケードで消える（同じ ID で作り直しても復活しない）", async () => {
+    const id = await seedBookWithChildren("感想付き");
+
+    await repository.deleteBook(id);
+
+    // 感想は書籍に 1:1 でぶら下がる。孤児が残っていれば、新しい書籍の作成時に
+    // bookId の unique 制約で衝突するか、無関係な感想が読み出される。
+    const recreated = await repository.createBook({ ...validBookBody, title: "作り直し" });
+    expect(await repository.getBook(recreated.id)).toMatchObject({ reflection: undefined });
+  });
+
+  it("他の書籍とその進捗ログは残る", async () => {
+    const targetId = await seedBookWithChildren("消す本");
+    const survivorId = await seedBookWithChildren("残す本");
+
+    await repository.deleteBook(targetId);
+
+    expect((await repository.listBooks()).map((book) => book.title)).toEqual(["残す本"]);
+    expect(await repository.listProgressLogs(survivorId)).toHaveLength(2);
+  });
+
+  // --- 準正常系 ---
+  it("進捗ログも感想も無い書籍を削除できる", async () => {
+    const book = await repository.createBook(validBookBody);
+
+    await repository.deleteBook(book.id);
+
+    expect(await repository.listBooks()).toHaveLength(0);
+  });
+
+  // --- 異常系 ---
+  it("存在しない書籍の削除は RepositoryNotFoundError", async () => {
+    await expect(repository.deleteBook(MISSING_UUID)).rejects.toThrow(
+      "対象の書籍が見つかりません。"
+    );
+  });
+
+  it("同じ書籍を二度削除すると 2 回目は RepositoryNotFoundError", async () => {
+    const id = await seedBookWithChildren("二度消し");
+    await repository.deleteBook(id);
+
+    await expect(repository.deleteBook(id)).rejects.toThrow("対象の書籍が見つかりません。");
+  });
+});
