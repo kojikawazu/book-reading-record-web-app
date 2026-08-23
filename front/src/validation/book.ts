@@ -27,7 +27,7 @@ export const normalizeTags = (raw: string): string[] => {
  *
  * @param input - フォーム入力値
  * @param input.title - タイトル
- * @param input.author - 著者
+ * @param input.author - 著者（空欄は未設定）
  * @param input.genre - ジャンル
  * @param input.totalPages - 総ページ数（`TOTAL_PAGES_UNKNOWN` は未入力）
  * @param input.tags - 正規化済みタグ配列
@@ -48,8 +48,9 @@ export const validateBookForm = (input: {
     errors.title = "タイトルは1〜200文字で入力してください。";
   }
 
-  if (input.author.trim().length < 1 || input.author.trim().length > 120) {
-    errors.author = "著者は1〜120文字で入力してください。";
+  // 未入力（空欄）を許容する。著者が不明な書籍やメモ用途の登録を妨げないため。
+  if (input.author.trim().length > 120) {
+    errors.author = "著者は120文字以内で入力してください。";
   }
 
   if (input.genre.trim().length > 80) {

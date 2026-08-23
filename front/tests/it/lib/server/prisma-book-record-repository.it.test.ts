@@ -180,3 +180,54 @@ describe("IT: 総ページ数が未入力の書籍（実 Postgres）", () => {
     expect(updated.status).toBe("completed");
   });
 });
+/**
+ * 著者が未設定（空文字）の書籍の扱い。
+ * `LocalStorageRepository` の UT と同じ観点を supabase ドライバ側でも固定し、
+ * 両ドライバの挙動が揃っていることを担保する（`.claude/rules/frontend.md`）。
+ *
+ * `BookRecordBooks.author` は NOT NULL の `VarChar(120)` であり、null ではなく空文字で
+ * 「未設定」を表す。**空文字が実 Postgres に保存できることは実 DB でしか確認できない**ため、
+ * この観点を IT に置く。
+ */
+describe("IT: 著者が未設定の書籍（実 Postgres）", () => {
+  // --- 正常系 ---
+  it("著者を空文字にして書籍を登録できる", async () => {
+    const book = await repository.createBook({ ...validBookBody, author: "" });
+
+    expect(book.author).toBe("");
+
+    // 取得し直しても空文字のまま（null へ化けない）ことを確認する。
+    const fetched = await repository.getBook(book.id);
+    expect(fetched?.author).toBe("");
+  });
+
+  it("空白のみの著者は trim して空文字で保存する", async () => {
+    const book = await repository.createBook({ ...validBookBody, author: "   " });
+
+    expect(book.author).toBe("");
+  });
+
+  it("既存書籍の著者を空文字へ更新できる", async () => {
+    const book = await repository.createBook(validBookBody);
+    expect(book.author).toBe(validBookBody.author);
+
+    const updated = await repository.updateBook(book.id, { author: "" });
+
+    expect(updated.author).toBe("");
+  });
+
+  it("上限境界（120 文字）の著者を保存できる", async () => {
+    const book = await repository.createBook({ ...validBookBody, author: "a".repeat(120) });
+
+    expect(book.author).toHaveLength(120);
+  });
+
+  // --- 準正常系: 上限は従来どおり効く ---
+  it("121 文字の著者は検証エラーで DB に残らない", async () => {
+    await expect(
+      repository.createBook({ ...validBookBody, author: "a".repeat(121) })
+    ).rejects.toThrow("著者は120文字以内で入力してください。");
+
+    expect(await repository.listBooks()).toHaveLength(0);
+  });
+});

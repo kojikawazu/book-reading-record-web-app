@@ -1,4 +1,4 @@
-import { STATUS_ORDER, TOTAL_PAGES_UNKNOWN } from "@/constants/book";
+import { AUTHOR_UNKNOWN_LABEL, STATUS_ORDER, TOTAL_PAGES_UNKNOWN } from "@/constants/book";
 import {
   INITIAL_STORAGE_PAYLOAD,
   RECOVERY_NOTICE_KEY,
@@ -51,6 +51,19 @@ export const formatProgress = (book: Book): string => {
 
   const rate = Math.round((book.currentPage / book.totalPages) * 1000) / 10;
   return `${book.currentPage} / ${book.totalPages} (${rate}%)`;
+};
+
+/**
+ * 著者の表示文字列を組み立てる（ダッシュボードと書籍詳細で共通）。
+ *
+ * 著者は任意入力であり、未設定は空文字で保持する。空欄のまま描画すると
+ * 行が消えてカードの高さが揃わないため、代替ラベルを出して欄自体は残す。
+ *
+ * @param author - 書籍の著者（空文字は未設定）
+ * @returns 設定済みならその著者名、未設定なら `AUTHOR_UNKNOWN_LABEL`
+ */
+export const formatAuthor = (author: string): string => {
+  return author.trim().length > 0 ? author : AUTHOR_UNKNOWN_LABEL;
 };
 
 // ISO 日時文字列を降順比較する（新しい日時ほど前）。

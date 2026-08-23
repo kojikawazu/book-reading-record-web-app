@@ -137,11 +137,12 @@ export default function NewBookPage() {
 
         <div className="space-y-2">
           <label htmlFor="author" className="text-sm font-medium text-[color:var(--foreground)]/80">
-            著者
+            著者（任意）
           </label>
           <input
             id="author"
             data-testid="book-author-input"
+            placeholder="不明な場合は空欄"
             value={author}
             onChange={(event) => setAuthor(event.target.value)}
             className="field-input"

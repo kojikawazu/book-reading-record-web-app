@@ -7,6 +7,7 @@ import { FORMAT_LABELS, STATUS_LABELS, STATUS_ORDER } from "@/constants/book";
 import {
   computeWeeklySummary,
   consumeRecoveryNotice,
+  formatAuthor,
   formatProgress,
   reflectionIsMissing,
 } from "@/lib/helpers";
@@ -72,7 +73,7 @@ const BookCard = ({ book }: { book: Book }) => {
           {STATUS_LABELS[book.status]}
         </span>
       </div>
-      <p className="mt-1 text-sm text-[color:var(--foreground)]/70">{book.author}</p>
+      <p className="mt-1 text-sm text-[color:var(--foreground)]/70">{formatAuthor(book.author)}</p>
       <p className="mt-2 text-xs text-[color:var(--foreground)]/75">
         {FORMAT_LABELS[book.format]} / {formatProgress(book)}
       </p>
