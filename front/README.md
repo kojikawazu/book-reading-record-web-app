@@ -111,6 +111,14 @@ IT / E2E のテスト DB 接続先は `TEST_DATABASE_URL` で指定します（`
 - `pnpm test:e2e:ui`: Playwright UIモード
 - `pnpm test:e2e:headed`: Headed実行
 
+## Dependency Overrides
+
+`package.json` の `pnpm.overrides` は推移的依存の脆弱性を塞ぐための一時措置。JSON にコメントを書けないため、理由と解除条件をここに残す。
+
+| 対象 | 理由 | 解除条件 |
+|---|---|---|
+| `@prisma/config>deepmerge-ts` → `^8.0.2` | `@prisma/config` が `deepmerge-ts@7.1.5` を完全固定しており、GHSA-ggr8-5vv4-36mx（再帰オブジェクトのマージでスタック枯渇）が残る。`@prisma/config` は `deepmerge()` で設定オブジェクトをマージするだけで、v8 の破壊的変更（Map のマージ挙動・型名の改称）に該当しない | `prisma` の更新で `@prisma/config` の依存が `>=8.0.0` になったら削除する |
+
 ## Vercel Deploy Control
 
 - `front/vercel.json` の `git.deploymentEnabled` でデプロイするブランチを制御する

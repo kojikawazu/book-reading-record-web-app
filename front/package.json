@@ -25,28 +25,33 @@
     "screenshots": "PLAYWRIGHT_BROWSERS_PATH=.playwright node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2",
-    "@supabase/supabase-js": "^2.95.3",
-    "next": "16.1.6",
+    "@prisma/client": "^6.19.3",
+    "@supabase/supabase-js": "^2.117.2",
+    "next": "16.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.1",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-jsdoc": "^63.0.10",
+    "eslint-plugin-jsdoc": "^63.3.3",
     "jsdom": "^29.1.1",
-    "prettier": "^3.8.1",
-    "prisma": "^6.16.2",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^4.1.10"
+    "prettier": "^3.9.9",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  },
+  "pnpm": {
+    "overrides": {
+      "@prisma/config>deepmerge-ts": "^8.0.2"
+    }
   }
 }
