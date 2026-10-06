@@ -100,6 +100,9 @@ export default function BookDetailPage() {
   };
 
   useEffect(() => {
+    // load 内の setState はすべて最初の await より後で走るため、同期的な連鎖レンダーは起きない。
+    // load は保存後の再読込でも使うので effect 内へ移せず、ルールが関数単位で誤検知する。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, authRequired, bookId, isAuthenticated]);
