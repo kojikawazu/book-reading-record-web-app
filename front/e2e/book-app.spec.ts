@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@tests/support/e2e-test";
 
 const STORAGE_KEY = "book-reading-record.v1";
 
