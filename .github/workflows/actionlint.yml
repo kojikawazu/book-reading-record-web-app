@@ -16,8 +16,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 取得スクリプトはチェックサム検証を伴わないため、万一取得物が不正でも読み取り専用の
-# チェックアウト以外に到達できないよう権限を絞る。このジョブにシークレットは渡さない。
+# このジョブにシークレットは渡さない。Docker Hub から取得したイメージを実行するため、
+# 万一取得物が不正でも読み取り専用のチェックアウト以外に到達できないよう権限を絞る。
+# （イメージは Makefile で digest まで固定しており、取得物のすり替えも検知される。）
 permissions:
   contents: read
 
@@ -29,15 +30,9 @@ jobs:
       # チェックアウトを必ず先に置く（リポジトリ外で実行するとエラー終了する）。
       - uses: actions/checkout@v7
 
-      # バージョンを固定する。latest にすると、コードを変えていないのに新リリースの
-      # 検査強化で CI が落ちる。更新は依存更新として明示的に行う（run: 内のバージョンは
-      # Dependabot では更新されない）。スクリプト URL・本体の双方をタグで固定する。
-      - name: Install actionlint
-        env:
-          ACTIONLINT_VERSION: 1.7.12
-        run: bash <(curl -sSfL "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}"
-
-      # shellcheck の追加設定は不要。ubuntu ランナーにプリインストール済みで、
-      # PATH にあれば run: のシェルスクリプトも自動で併せて検査される。
+      # コマンドの正本は Makefile の actionlint ターゲット（ローカルと同じものを呼ぶ）。
+      # 公式イメージに shellcheck が同梱されているため、ランナーのプリインストールに
+      # 依存せず run: の中身まで検査される。バージョンは Makefile の ACTIONLINT_IMAGE で
+      # タグと digest の双方を固定している（Dependabot では更新されないため手で上げる）。
       - name: Run actionlint
-        run: ./actionlint -color
+        run: make actionlint
