@@ -16,7 +16,7 @@ DB_SERVICE := db
 .PHONY: help \
 	install e2e-install \
 	dev build start \
-	lint lint-fix format format-check check \
+	lint lint-fix format format-check check secret-scan \
 	test test-watch test-it test-e2e test-e2e-ui test-e2e-headed test-all \
 	prisma-generate prisma-pull prisma-validate \
 	db-up db-down db-logs db-psql \
@@ -56,6 +56,9 @@ format-check: ## Prettier の整形チェック（CI 相当）
 	cd $(FRONT) && pnpm format:check
 
 check: format-check lint ## 静的ゲート一括（format:check → lint）
+
+secret-scan: ## 鍵・.env が Git 管理下（または追跡候補）にないか検査（CI と同じスクリプト）
+	./scripts/check-secret-files.sh
 
 ## ---- Test (3層: UT / IT / E2E) --------------------------------------------
 
