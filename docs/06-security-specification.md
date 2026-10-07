@@ -58,7 +58,12 @@
 - ログイン方式は Supabase Auth の Google OAuth を利用する
 - クライアントは `ApiRepository` から `/api/book-record/*` を呼び出す際、Supabaseセッションが存在する場合のみ `Authorization: Bearer <token>` を送信する
 - 閲覧系GET（`GET /api/book-record/books` / `GET /api/book-record/books/[id]` / `GET /api/book-record/books/[id]/progress-logs`）は未認証でも利用できる
-- 更新系（`POST /api/book-record/books` / `PATCH /api/book-record/books/[id]` / `POST /api/book-record/books/[id]/progress-logs` / `POST /api/book-record/books/[id]/reflection`）はBearerトークン必須で、未認証は `401` を返す
+- 更新系（`POST /api/book-record/books` / `PATCH /api/book-record/books/[id]` / `DELETE /api/book-record/books/[id]` / `POST /api/book-record/books/[id]/progress-logs` / `POST /api/book-record/books/[id]/reflection`）は**管理者のみ**が実行できる（Issue #103）。判定は `src/lib/server/auth-guard.ts` の `requireAdmin` に集約する
+  - `Authorization: Bearer <token>` を Supabase Auth（`auth.getUser`）で検証し、解決したユーザーのメールアドレスがサーバー専用の環境変数 `ADMIN_EMAIL` と一致する場合のみ許可する（前後空白を除き、大文字小文字を区別しない完全一致）
+  - トークン欠落・無効は `401`、トークンは有効だがメールが一致しない（またはメールを持たない）ユーザーは `403`
+  - `ADMIN_EMAIL` または Supabase の環境変数が未設定の場合は `500` で**全書き込みを拒否する**（設定漏れを「誰でも書ける」に倒さない）
+  - `ADMIN_EMAIL` に `NEXT_PUBLIC_` を付けない（管理者のアドレスをクライアントバンドルへ露出させない）
+- 共有 Supabase Auth にサインインできること自体は書き込み権限を意味しない。サインアップの可否は Supabase 側の設定であり、本アプリの認可はそれに依存しない
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリの `.env.local` では管理しない（Supabase Authプロジェクト側で管理する）
 
 ## 7. RLSポリシー（Row Level Security）

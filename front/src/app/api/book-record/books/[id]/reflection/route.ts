@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ReflectionInput } from "@/types/book";
-import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
+import { isAuthGuardError, requireAdmin } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,
   PrismaBookRecordRepository,
@@ -55,7 +55,7 @@ type Params = {
  */
 export async function POST(request: NextRequest, context: Params) {
   try {
-    await requireAuthenticatedUser(request);
+    await requireAdmin(request);
     const { id } = await context.params;
     const body = await request.json();
     const input = parseReflectionInput(body);

@@ -27,7 +27,7 @@ const H = vi.hoisted(() => {
     getBook: vi.fn(),
     updateBook: vi.fn(),
     deleteBook: vi.fn(),
-    requireAuthenticatedUser: vi.fn(),
+    requireAdmin: vi.fn(),
   };
 });
 
@@ -44,7 +44,7 @@ vi.mock("@/lib/server/prisma-book-record-repository", () => ({
 }));
 
 vi.mock("@/lib/server/auth-guard", () => ({
-  requireAuthenticatedUser: H.requireAuthenticatedUser,
+  requireAdmin: H.requireAdmin,
   AuthGuardError: H.AuthGuardError,
   isAuthGuardError: (v: unknown) => v instanceof H.AuthGuardError,
 }));
@@ -60,8 +60,8 @@ beforeEach(() => {
   H.getBook.mockReset();
   H.updateBook.mockReset();
   H.deleteBook.mockReset();
-  H.requireAuthenticatedUser.mockReset();
-  H.requireAuthenticatedUser.mockResolvedValue(undefined);
+  H.requireAdmin.mockReset();
+  H.requireAdmin.mockResolvedValue(undefined);
 });
 
 describe("GET /api/book-record/books/[id]（未認証可）", () => {
@@ -107,9 +107,17 @@ describe("PATCH /api/book-record/books/[id]（認証必須）", () => {
 
   // --- 準正常系 ---
   it("未認証なら 401 で更新しない", async () => {
-    H.requireAuthenticatedUser.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
     const res = await PATCH(jsonReq({ title: "new" }), ctx("b1"));
     expect(res.status).toBe(401);
+    expect(H.updateBook).not.toHaveBeenCalled();
+  });
+
+  it("認証済みでも管理者以外（認可ガードが 403 を投げる）なら 403 で更新しない", async () => {
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("この操作を行う権限がありません。", 403));
+    const res = await PATCH(jsonReq({ title: "new" }), ctx("b1"));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ message: "この操作を行う権限がありません。" });
     expect(H.updateBook).not.toHaveBeenCalled();
   });
 
@@ -166,10 +174,18 @@ describe("DELETE /api/book-record/books/[id]（認証必須）", () => {
 
   // --- 準正常系 ---
   it("未認証なら 401 で削除しない", async () => {
-    H.requireAuthenticatedUser.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
     const res = await DELETE(jsonReq(null), ctx("b1"));
 
     expect(res.status).toBe(401);
+    expect(H.deleteBook).not.toHaveBeenCalled();
+  });
+
+  it("認証済みでも管理者以外（認可ガードが 403 を投げる）なら 403 で削除しない", async () => {
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("この操作を行う権限がありません。", 403));
+    const res = await DELETE(jsonReq(null), ctx("b1"));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ message: "この操作を行う権限がありません。" });
     expect(H.deleteBook).not.toHaveBeenCalled();
   });
 

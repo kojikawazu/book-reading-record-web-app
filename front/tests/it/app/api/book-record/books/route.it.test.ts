@@ -1,18 +1,18 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // 認証境界（Supabase Auth = ネットワーク I/O）のみモックし、Prisma は実 Postgres を使う。
-// AuthGuardError / isAuthGuardError は本物を残し、ルートの 401 写像を実挙動のまま検証する。
+// AuthGuardError / isAuthGuardError は本物を残し、ルートの 401 / 403 写像を実挙動のまま検証する。
 vi.mock("@/lib/server/auth-guard", async (importActual) => {
   const actual = await importActual<typeof import("@/lib/server/auth-guard")>();
-  return { ...actual, requireAuthenticatedUser: vi.fn(async () => {}) };
+  return { ...actual, requireAdmin: vi.fn(async () => {}) };
 });
 
-import { AuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
+import { AuthGuardError, requireAdmin } from "@/lib/server/auth-guard";
 import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
 import { jsonReq, validBookBody } from "@tests/support/it-harness";
 import { GET, POST } from "@/app/api/book-record/books/route";
 
-const authMock = vi.mocked(requireAuthenticatedUser);
+const authMock = vi.mocked(requireAdmin);
 
 /**
  * POST /books を叩いて作成書籍 ID を返す（正常系ヘルパ）。
@@ -90,6 +90,17 @@ describe("IT: /api/book-record/books（実 Postgres）", () => {
     const res = await POST(jsonReq(validBookBody));
     expect(res.status).toBe(401);
     await expect(res.json()).resolves.toEqual({ message: "ログインが必要です。" });
+
+    const { books } = await (await GET()).json();
+    expect(books).toEqual([]);
+  });
+
+  it("管理者以外の POST は 403 を返し DB を変更しない", async () => {
+    authMock.mockRejectedValueOnce(new AuthGuardError("この操作を行う権限がありません。", 403));
+
+    const res = await POST(jsonReq(validBookBody));
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toEqual({ message: "この操作を行う権限がありません。" });
 
     const { books } = await (await GET()).json();
     expect(books).toEqual([]);

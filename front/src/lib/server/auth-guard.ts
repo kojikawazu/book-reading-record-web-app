@@ -18,6 +18,10 @@ const serverAuthClient =
       })
     : null;
 
+// 書き込みを許可する唯一のメールアドレス（単一ユーザー MVP のため 1 件のみ）。
+// 比較は前後空白を除いた小文字で行う。未設定・空文字は「設定不備」として扱い、全書き込みを拒否する。
+const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
+
 /** 認証ガード失敗を表すエラー。Route Handler で対応する HTTP ステータスに変換する。 */
 export class AuthGuardError extends Error {
   readonly statusCode: number;
@@ -39,15 +43,16 @@ export const isAuthGuardError = (value: unknown): value is AuthGuardError => {
 };
 
 /**
- * 更新系エンドポイントの認証ガード。`Authorization: Bearer <token>` を検証し、
- * Supabase Auth でユーザーを解決できなければ拒否する。
+ * 更新系エンドポイントの認可ガード。`Authorization: Bearer <token>` を Supabase Auth で検証し、
+ * 解決したユーザーのメールアドレスが `ADMIN_EMAIL` と一致する場合のみ通過させる。
+ * トークンが有効でも管理者以外は拒否する（docs/06-security-specification.md §6）。
  *
  * @param request - 受信リクエスト
- * @throws {AuthGuardError} 環境変数不足（500）・トークン欠落や無効（401）の場合
+ * @throws {AuthGuardError} 環境変数不足（500）・トークン欠落や無効（401）・管理者以外（403）の場合
  */
-export const requireAuthenticatedUser = async (request: NextRequest): Promise<void> => {
-  if (!serverAuthClient) {
-    throw new AuthGuardError("Supabase Authの環境変数が不足しています。", 500);
+export const requireAdmin = async (request: NextRequest): Promise<void> => {
+  if (!serverAuthClient || !adminEmail) {
+    throw new AuthGuardError("認証設定が不足しています。", 500);
   }
 
   const authorization = request.headers.get("authorization");
@@ -63,5 +68,10 @@ export const requireAuthenticatedUser = async (request: NextRequest): Promise<vo
   const { data, error } = await serverAuthClient.auth.getUser(token);
   if (error || !data.user) {
     throw new AuthGuardError("ログインが必要です。", 401);
+  }
+
+  const userEmail = data.user.email?.trim().toLowerCase() ?? "";
+  if (userEmail !== adminEmail) {
+    throw new AuthGuardError("この操作を行う権限がありません。", 403);
   }
 };

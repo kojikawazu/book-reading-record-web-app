@@ -91,7 +91,7 @@ flowchart TD
     API -->|"fetch /api/book-record/*"| RH["Next.js Route Handler"]
     RH --> PRP["PrismaBookRecordRepository"]
     PRP --> DB[("Supabase PostgreSQL<br/>BookRecord* テーブル")]
-    RH -. "Bearer 検証" .-> AUTH["Supabase Auth"]
+    RH -. "Bearer 検証 + ADMIN_EMAIL 照合" .-> AUTH["Supabase Auth"]
 ```
 
 詳細は [docs/09-architecture-specification.md](docs/09-architecture-specification.md) を参照。

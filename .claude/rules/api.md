@@ -36,10 +36,10 @@ src/app/api/book-record/
 
 - RESTful 設計（リソース指向エンドポイント）。レスポンス形式は JSON（`NextResponse.json()`）。
 - 入力バリデーションは Route Handler / `src/validation/book.ts` で実施する。
-- エラー時は適切な HTTP ステータスコード（400/401/404/500）と `{ message }` 形式で返す（`docs/07-api-specification.md` §3）。
+- エラー時は適切な HTTP ステータスコード（400/401/403/404/500）と `{ message }` 形式で返す（`docs/07-api-specification.md` §3）。
 
 ## 認可
 
 - 閲覧系 GET（books 一覧 / 取得 / progress-logs）は**未認証可**。
-- 更新系（POST / PATCH）は `Authorization: Bearer <token>` **必須**。未認証は `401`。認証ガードは `src/lib/server/auth-guard.ts` に集約する。
+- 更新系（POST / PATCH / DELETE）は `Authorization: Bearer <token>` **必須**で、さらにユーザーのメールが `ADMIN_EMAIL` と一致する場合のみ許可する。未認証は `401`、管理者以外は `403`。認可ガード（`requireAdmin`）は `src/lib/server/auth-guard.ts` に集約する。
 - 認証契約・RLS の詳細は `docs/06-security-specification.md` を正とする。

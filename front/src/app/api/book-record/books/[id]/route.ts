@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UpdateBookInput } from "@/types/book";
-import { isAuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
+import { isAuthGuardError, requireAdmin } from "@/lib/server/auth-guard";
 import {
   isRepositoryError,
   PrismaBookRecordRepository,
@@ -120,7 +120,7 @@ export async function GET(_request: NextRequest, context: Params) {
  */
 export async function PATCH(request: NextRequest, context: Params) {
   try {
-    await requireAuthenticatedUser(request);
+    await requireAdmin(request);
     const { id } = await context.params;
     const body = await request.json();
     const patch = parseUpdateBookInput(body);
@@ -159,7 +159,7 @@ export async function PATCH(request: NextRequest, context: Params) {
  */
 export async function DELETE(request: NextRequest, context: Params) {
   try {
-    await requireAuthenticatedUser(request);
+    await requireAdmin(request);
     const { id } = await context.params;
 
     await repository.deleteBook(id);

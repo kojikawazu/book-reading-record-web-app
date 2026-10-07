@@ -28,7 +28,7 @@ const H = vi.hoisted(() => {
     AuthGuardError,
     listBooks: vi.fn(),
     createBook: vi.fn(),
-    requireAuthenticatedUser: vi.fn(),
+    requireAdmin: vi.fn(),
   };
 });
 
@@ -44,7 +44,7 @@ vi.mock("@/lib/server/prisma-book-record-repository", () => ({
 }));
 
 vi.mock("@/lib/server/auth-guard", () => ({
-  requireAuthenticatedUser: H.requireAuthenticatedUser,
+  requireAdmin: H.requireAdmin,
   AuthGuardError: H.AuthGuardError,
   isAuthGuardError: (v: unknown) => v instanceof H.AuthGuardError,
 }));
@@ -68,8 +68,8 @@ const validBody = {
 beforeEach(() => {
   H.listBooks.mockReset();
   H.createBook.mockReset();
-  H.requireAuthenticatedUser.mockReset();
-  H.requireAuthenticatedUser.mockResolvedValue(undefined);
+  H.requireAdmin.mockReset();
+  H.requireAdmin.mockResolvedValue(undefined);
 });
 
 describe("GET /api/book-record/books（未認証可）", () => {
@@ -101,9 +101,17 @@ describe("POST /api/book-record/books（認証必須）", () => {
 
   // --- 準正常系 ---
   it("未認証（認証ガードが 401 を投げる）なら 401 で作成しない", async () => {
-    H.requireAuthenticatedUser.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("ログインが必要です。", 401));
     const res = await POST(jsonReq(validBody));
     expect(res.status).toBe(401);
+    expect(H.createBook).not.toHaveBeenCalled();
+  });
+
+  it("認証済みでも管理者以外（認可ガードが 403 を投げる）なら 403 で作成しない", async () => {
+    H.requireAdmin.mockRejectedValue(new H.AuthGuardError("この操作を行う権限がありません。", 403));
+    const res = await POST(jsonReq(validBody));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ message: "この操作を行う権限がありません。" });
     expect(H.createBook).not.toHaveBeenCalled();
   });
 

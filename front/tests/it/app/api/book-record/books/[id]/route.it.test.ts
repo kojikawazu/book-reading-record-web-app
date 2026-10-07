@@ -2,17 +2,17 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/server/auth-guard", async (importActual) => {
   const actual = await importActual<typeof import("@/lib/server/auth-guard")>();
-  return { ...actual, requireAuthenticatedUser: vi.fn(async () => {}) };
+  return { ...actual, requireAdmin: vi.fn(async () => {}) };
 });
 
-import { AuthGuardError, requireAuthenticatedUser } from "@/lib/server/auth-guard";
+import { AuthGuardError, requireAdmin } from "@/lib/server/auth-guard";
 import { disconnectDb, resetBookRecordTables } from "@tests/support/it-db";
 import { ctx, jsonReq, validBookBody } from "@tests/support/it-harness";
 import { POST as createBookRoute } from "@/app/api/book-record/books/route";
 import { DELETE, GET, PATCH } from "@/app/api/book-record/books/[id]/route";
 import { POST as addProgressLogRoute } from "@/app/api/book-record/books/[id]/progress-logs/route";
 
-const authMock = vi.mocked(requireAuthenticatedUser);
+const authMock = vi.mocked(requireAdmin);
 const MISSING_ID = "00000000-0000-0000-0000-000000000000";
 
 const seedBook = async (overrides: Partial<typeof validBookBody> = {}): Promise<string> => {
@@ -84,6 +84,17 @@ describe("IT: /api/book-record/books/[id]（実 Postgres）", () => {
     expect(book.title).toBe("元タイトル");
   });
 
+  it("管理者以外の PATCH は 403 で DB を変更しない", async () => {
+    const id = await seedBook({ title: "元タイトル" });
+    authMock.mockRejectedValueOnce(new AuthGuardError("この操作を行う権限がありません。", 403));
+
+    const res = await PATCH(jsonReq({ title: "侵入" }), ctx(id));
+    expect(res.status).toBe(403);
+
+    const { book } = await (await GET(jsonReq({}), ctx(id))).json();
+    expect(book.title).toBe("元タイトル");
+  });
+
   // 正常系: DELETE
   it("DELETE は書籍を削除し、以降の GET が 404 になる", async () => {
     const id = await seedBook();
@@ -119,6 +130,17 @@ describe("IT: /api/book-record/books/[id]（実 Postgres）", () => {
 
     const res = await DELETE(jsonReq({}), ctx(id));
     expect(res.status).toBe(401);
+
+    const { book } = await (await GET(jsonReq({}), ctx(id))).json();
+    expect(book.title).toBe("消されない本");
+  });
+
+  it("管理者以外の DELETE は 403 で DB から消さない", async () => {
+    const id = await seedBook({ title: "消されない本" });
+    authMock.mockRejectedValueOnce(new AuthGuardError("この操作を行う権限がありません。", 403));
+
+    const res = await DELETE(jsonReq({}), ctx(id));
+    expect(res.status).toBe(403);
 
     const { book } = await (await GET(jsonReq({}), ctx(id))).json();
     expect(book.title).toBe("消されない本");
