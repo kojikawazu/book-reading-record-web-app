@@ -69,7 +69,7 @@
 | `base-uri` / `form-action` | `'self'` | `<base>` の書き換えと、外部へのフォーム送信を防ぐ |
 | `object-src` | `'none'` | プラグイン（`<object>` / `<embed>`）を使わない |
 | `frame-ancestors` | `'none'` | 他サイトへの埋め込みを禁止する |
-| `script-src` | `'self' 'unsafe-inline'` | Next.js のハイドレーション用インラインスクリプトのため `'unsafe-inline'` が必要（外すと `script-src-elem` 違反になることを E2E で確認済み）。本番ビルドでは `'unsafe-eval'` が不要なため許可しない |
+| `script-src` | `'self' 'unsafe-inline'` | Next.js のハイドレーション用インラインスクリプトのため `'unsafe-inline'` が必要（外すと `script-src-elem` 違反になることを E2E で確認済み）。本番ビルドでは `'unsafe-eval'` が不要なため許可しない。**開発サーバー（`NODE_ENV === "development"`）に限り `'unsafe-eval'` を足す**。開発モードの React はコールスタックの再構築などのデバッグ機能で `eval()` を使い、無いとコンソールエラーになるため（Issue #117）。`development` と完全一致したときだけ足し、`production` / `test` / 未設定では足さない |
 | `style-src` | `'self' 'unsafe-inline'` | Tailwind / React のインラインスタイルのため |
 | `img-src` | `'self' data: blob:` | 外部画像を読み込まないため `https:` は許可しない。書影表示（Issue #10）に着手する際に、画像の配信元だけを足す |
 | `font-src` | `'self' data:` | 現在 Web フォントは読み込んでいない（システムフォント）。追加する場合も自己ホストに限り、外部 CDN を許可しない |
