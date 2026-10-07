@@ -8,6 +8,7 @@
 - [2. 入力検証](#2-入力検証)
 - [3. 状態整合性](#3-状態整合性)
 - [4. XSS / 安全な表示](#4-xss--安全な表示)
+  - [4.1 セキュリティヘッダー](#41-セキュリティヘッダー)
 - [5. 秘密情報管理](#5-秘密情報管理)
 - [6. 認証契約（Supabase Auth）](#6-認証契約supabase-auth)
 - [7. RLSポリシー（Row Level Security）](#7-rlsポリシーrow-level-security)
@@ -47,6 +48,46 @@
 - `dangerouslySetInnerHTML` を使用しない
 - ユーザー入力をHTMLとして解釈しない（Reactの標準エスケープを前提）
 - 外部リンクを開く場合は `rel="noopener noreferrer"` を付与する
+
+### 4.1 セキュリティヘッダー
+
+`front/next.config.ts` の `headers()` で、全パス（`/:path*`）のレスポンスに次のヘッダーを付与する（Issue #104）。Next.js もホスティング（Vercel）も、これらを自動では付与しない。
+
+| ヘッダー | 値 | 目的 |
+|---|---|---|
+| `Content-Security-Policy-Report-Only` | 下表 | XSS が成立した場合に、外部スクリプトの読み込みや外部への送信を止める。現在は観測モード（後述） |
+| `X-Content-Type-Options` | `nosniff` | MIME スニッフィングによる意図しないスクリプト実行を防ぐ |
+| `X-Frame-Options` | `DENY` | クリックジャッキングを防ぐ（CSP の `frame-ancestors 'none'` を解釈しない古いブラウザ向け） |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | 外部へ遷移するときに URL のパス（書籍 ID など）を送らない |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | 使わないブラウザ機能の権限を閉じる |
+
+#### CSP のディレクティブ
+
+| ディレクティブ | 値 | 理由 |
+|---|---|---|
+| `default-src` | `'self'` | 個別に指定しないリソースは同一オリジンのみ |
+| `base-uri` / `form-action` | `'self'` | `<base>` の書き換えと、外部へのフォーム送信を防ぐ |
+| `object-src` | `'none'` | プラグイン（`<object>` / `<embed>`）を使わない |
+| `frame-ancestors` | `'none'` | 他サイトへの埋め込みを禁止する |
+| `script-src` | `'self' 'unsafe-inline'` | Next.js のハイドレーション用インラインスクリプトのため `'unsafe-inline'` が必要（外すと `script-src-elem` 違反になることを E2E で確認済み）。本番ビルドでは `'unsafe-eval'` が不要なため許可しない |
+| `style-src` | `'self' 'unsafe-inline'` | Tailwind / React のインラインスタイルのため |
+| `img-src` | `'self' data: blob:` | 外部画像を読み込まないため `https:` は許可しない。書影表示（Issue #10）に着手する際に、画像の配信元だけを足す |
+| `font-src` | `'self' data:` | 現在 Web フォントは読み込んでいない（システムフォント）。追加する場合も自己ホストに限り、外部 CDN を許可しない |
+| `connect-src` | `'self' <NEXT_PUBLIC_SUPABASE_URL>` | Supabase Auth との通信を許可する。これを欠くと supabase モードの認証が止まる。未設定のビルド（local モード・CI）では `'self'` だけになる |
+
+**観測モード（Report-Only）から始める理由**: CSP をいきなり強制すると、Google OAuth のコールバック後の Supabase Auth 通信など、ローカルで再現しにくい経路が壊れうる。Report-Only は違反をブラウザに報告するだけでブロックしないため、本番で違反 0 件を観測してから強制モード（`Content-Security-Policy`）へ切り替える（Issue #109）。**Report-Only のままでは XSS を止めない**ため、観測は切り替えのための一時的な段階として扱う。
+
+**違反の検出**: E2E は全テストで `securitypolicyviolation` イベントを収集し、違反が 1 件でもあれば失敗する（`front/tests/support/e2e-test.ts`）。Report-Only でもこのイベントは発火するため、観測モードのうちから主要フローの違反 0 件を回帰テストで担保できる。
+
+#### 導入時の観測記録（Issue #104 / 2026-10-07）
+
+| 観測対象 | 環境 | 結果 |
+|---|---|---|
+| E2E 全 50 ケース（一覧・登録・進捗・完読・再読・検索・統計・削除・破損復旧） | ローカル本番ビルド・`local` モード | 違反 0 件 |
+| 一覧 `/` · 統計 `/stats` · ログイン `/auth/login` · 登録 `/books/new` · 詳細 `/books/:id`（閲覧のみ） | ローカル本番ビルド・`supabase` モード | 違反 0 件・コンソールエラー 0 件 |
+| ログイン（Google OAuth）· 書き込み | 本番 | 未観測（#109 で観測する） |
+
+**nonce 化を見送る判断**: `'unsafe-inline'` をやめて nonce 方式にするには、リクエストごとに nonce を発行する `middleware.ts`（Next.js 16 では `proxy.ts`）の新設が必要になり、全リクエストに処理を挟む構成変更になる。強制化そのものに nonce は不要なので、まず強制モードを有効にして「違反が実際にブロックされる」状態を早く得ることを優先し、nonce 化は別途判断する（md-view-my-collection と同じ判断）。
 
 ## 5. 秘密情報管理
 

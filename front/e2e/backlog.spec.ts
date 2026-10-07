@@ -10,7 +10,7 @@
  *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1, B3-S2（**実装済み・有効**）
  *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3（**実装済み・有効**）
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@tests/support/e2e-test";
 
 const STORAGE_KEY = "book-reading-record.v1";
 

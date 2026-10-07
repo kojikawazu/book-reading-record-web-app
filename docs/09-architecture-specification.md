@@ -25,6 +25,7 @@
 - データ永続化: Supabase PostgreSQL（Prisma）/ localStorage
 - E2E テスト: Playwright（Chromium）
 - デプロイ先: Vercel
+- セキュリティヘッダー: `front/next.config.ts` の `headers()` で全レスポンスに付与する（CSP は現在 Report-Only。詳細は `06-security-specification.md` §4.1）
 
 ## 3. データアクセスアーキテクチャ
 

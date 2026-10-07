@@ -358,6 +358,9 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
 | SM-3 | 書籍登録ページが 200 で表示される | `goto("/books/new")` | フォームが visible | High |
 | SM-4 | コンソールエラーがない（主要ページ） | `goto("/")`, `goto("/stats")` | `console.error` が呼ばれない | Medium |
 | SM-5 | 存在しない書籍 ID にアクセスするとトップへリダイレクト | `goto("/books/nonexistent-id")` | URL が `/` またはエラー UI が visible | Medium |
+| SM-6 | 全レスポンスにセキュリティヘッダーが付与される（Issue #104） | `request.get` で `/`・`/stats`・`/books/new`・`/api/book-record/books` | CSP（Report-Only）・`X-Content-Type-Options`・`X-Frame-Options`・`Referrer-Policy`・`Permissions-Policy` が期待値どおり | High |
+
+**全ケース共通: CSP 違反 0 件**。全 E2E は `@playwright/test` ではなく `@tests/support/e2e-test` の `test` を使う。この `test` は各テストで `securitypolicyviolation` イベントを収集し、終了時に違反が 0 件であることを検証する（`docs/06-security-specification.md` §4.1）。新しい spec を追加するときも同じ import を使う。
 
 #### B. 週次サマリー追加ケース（`book-app.spec.ts` 追記）
 
