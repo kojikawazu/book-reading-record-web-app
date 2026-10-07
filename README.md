@@ -150,6 +150,7 @@ make help           # 全ターゲット一覧（説明付き）
 make install        # 依存インストール（pnpm install）
 make dev            # 開発サーバー起動（next dev）
 make check          # 静的ゲート一括（format:check → lint）
+make secret-scan    # 鍵・.env が Git 管理下にないか検査（CI の secret-scan と同じスクリプト）
 make test           # UT / make test-it: IT / make test-e2e: E2E
 make test-all       # UT → IT → E2E を順に実行
 make db-up / db-down  # IT 用 Postgres コンテナの起動 / 破棄
@@ -164,3 +165,4 @@ make db-up / db-down  # IT 用 Postgres コンテナの起動 / 破棄
 - `front/vercel.json` の `git.deploymentEnabled` により、**`main` 以外のブランチでは Vercel デプロイを発火させない**（Preview の無駄打ちを止める）。
 - ビルドスキップ（`ignoreCommand`）は**使わない**。失敗が「本番が古いまま緑に見える」形で潜伏するため（`.claude/rules/vercel.md`）。パスによる実行制御は CI 側で行う。
 - CI（`.github/workflows/ci.yml`）は `docs/**` のみの変更時に E2E をスキップ。
+- 秘匿ファイルの混入検出（`.github/workflows/secret-scan.yml`）は、変更の種類を問わず全 PR で常に実行する。検出ロジックは `scripts/check-secret-files.sh` の 1 箇所にあり、`make secret-scan` も同じものを呼ぶ。
