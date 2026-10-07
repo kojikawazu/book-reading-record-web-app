@@ -28,8 +28,8 @@ const nextConfig: NextConfig = {
   /**
    * 全レスポンスに付与するセキュリティヘッダー。
    *
-   * CSP は #104 で Report-Only（違反を報告するだけでブロックしない観測モード）として導入した。
-   * 本番で違反 0 件を観測したうえで、#109 で強制モード（`Content-Security-Policy`）へ切り替える。
+   * CSP は強制モード（違反した読み込み・通信をブロックする）。#104 で Report-Only（報告のみ）として
+   * 導入し、本番で違反 0 件を観測したうえで #109 で切り替えた。観測記録は docs/06 §4.1 を正とする。
    *
    * @returns ヘッダー適用ルールの配列
    */
@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy-Report-Only", value: cspDirectives },
+          { key: "Content-Security-Policy", value: cspDirectives },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
