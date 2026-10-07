@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const SUPABASE_URL = "https://example-ref.supabase.co";
+// 強制モードのヘッダー名（#109）。Report-Only（観測モード）に戻っていないことも併せて検証する。
+const CSP_HEADER = "Content-Security-Policy";
 
 // next.config.ts は import 時に NEXT_PUBLIC_SUPABASE_URL を読むため、env を切り替えて再読み込みする。
 // undefined を渡すと未設定（local モードや CI のビルド）を再現する。
@@ -46,7 +48,7 @@ describe("next.config.ts headers()", () => {
     expect(rules).toHaveLength(1);
     expect(rules[0]?.source).toBe("/:path*");
     expect(toMap(rules[0]?.headers ?? [])).toEqual({
-      "Content-Security-Policy-Report-Only": expect.any(String),
+      [CSP_HEADER]: expect.any(String),
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",
       "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -56,15 +58,23 @@ describe("next.config.ts headers()", () => {
 
   it("connect-src に Supabase のオリジンを含める", async () => {
     const rules = await loadHeaders(SUPABASE_URL);
-    const csp = parseCsp(toMap(rules[0]?.headers ?? [])["Content-Security-Policy-Report-Only"]!);
+    const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
 
     expect(csp["connect-src"]).toBe(`'self' ${SUPABASE_URL}`);
+  });
+
+  it("CSP を Report-Only ではなく強制モードで付与する", async () => {
+    const rules = await loadHeaders(SUPABASE_URL);
+    const headers = toMap(rules[0]?.headers ?? []);
+
+    expect(headers[CSP_HEADER]).toContain("default-src 'self'");
+    expect(headers).not.toHaveProperty("Content-Security-Policy-Report-Only");
   });
 
   // --- 準正常系 ---
   it("Supabase の URL が未設定でも connect-src は 'self' だけになり、文字列が壊れない", async () => {
     const rules = await loadHeaders(undefined);
-    const raw = toMap(rules[0]?.headers ?? [])["Content-Security-Policy-Report-Only"]!;
+    const raw = toMap(rules[0]?.headers ?? [])[CSP_HEADER]!;
 
     expect(parseCsp(raw)["connect-src"]).toBe("'self'");
     expect(raw).not.toContain("undefined");
@@ -73,7 +83,7 @@ describe("next.config.ts headers()", () => {
 
   it("外部リソースを広く許可するワイルドカードを含めない", async () => {
     const rules = await loadHeaders(SUPABASE_URL);
-    const csp = parseCsp(toMap(rules[0]?.headers ?? [])["Content-Security-Policy-Report-Only"]!);
+    const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
 
     for (const [name, value] of Object.entries(csp)) {
       expect(value, name).not.toMatch(/(^|\s)(\*|https:|http:)(\s|$)/);
@@ -82,14 +92,14 @@ describe("next.config.ts headers()", () => {
 
   it("script-src に 'unsafe-eval' を許可しない", async () => {
     const rules = await loadHeaders(SUPABASE_URL);
-    const csp = parseCsp(toMap(rules[0]?.headers ?? [])["Content-Security-Policy-Report-Only"]!);
+    const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
 
     expect(csp["script-src"]).toBe("'self' 'unsafe-inline'");
   });
 
   it("フレーム埋め込み・プラグイン・base 書き換えを禁止する", async () => {
     const rules = await loadHeaders(SUPABASE_URL);
-    const csp = parseCsp(toMap(rules[0]?.headers ?? [])["Content-Security-Policy-Report-Only"]!);
+    const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
 
     expect(csp["frame-ancestors"]).toBe("'none'");
     expect(csp["object-src"]).toBe("'none'");

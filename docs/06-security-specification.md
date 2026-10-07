@@ -55,7 +55,7 @@
 
 | ヘッダー | 値 | 目的 |
 |---|---|---|
-| `Content-Security-Policy-Report-Only` | 下表 | XSS が成立した場合に、外部スクリプトの読み込みや外部への送信を止める。現在は観測モード（後述） |
+| `Content-Security-Policy` | 下表 | XSS が成立した場合に、外部スクリプトの読み込みや外部への送信を止める（強制モード。Issue #109） |
 | `X-Content-Type-Options` | `nosniff` | MIME スニッフィングによる意図しないスクリプト実行を防ぐ |
 | `X-Frame-Options` | `DENY` | クリックジャッキングを防ぐ（CSP の `frame-ancestors 'none'` を解釈しない古いブラウザ向け） |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | 外部へ遷移するときに URL のパス（書籍 ID など）を送らない |
@@ -75,9 +75,11 @@
 | `font-src` | `'self' data:` | 現在 Web フォントは読み込んでいない（システムフォント）。追加する場合も自己ホストに限り、外部 CDN を許可しない |
 | `connect-src` | `'self' <NEXT_PUBLIC_SUPABASE_URL>` | Supabase Auth との通信を許可する。これを欠くと supabase モードの認証が止まる。未設定のビルド（local モード・CI）では `'self'` だけになる |
 
-**観測モード（Report-Only）から始める理由**: CSP をいきなり強制すると、Google OAuth のコールバック後の Supabase Auth 通信など、ローカルで再現しにくい経路が壊れうる。Report-Only は違反をブラウザに報告するだけでブロックしないため、本番で違反 0 件を観測してから強制モード（`Content-Security-Policy`）へ切り替える（Issue #109）。**Report-Only のままでは XSS を止めない**ため、観測は切り替えのための一時的な段階として扱う。
+**観測モード（Report-Only）から始めた理由**: CSP をいきなり強制すると、Google OAuth のコールバック後の Supabase Auth 通信など、ローカルで再現しにくい経路が壊れうる。Report-Only は違反をブラウザに報告するだけでブロックしないため、#104 で Report-Only として導入し、本番で違反 0 件を観測してから強制モード（`Content-Security-Policy`）へ切り替えた（Issue #109）。**Report-Only のままでは XSS を止めない**ため、観測は切り替えのための一時的な段階として扱った。
 
-**違反の検出**: E2E は全テストで `securitypolicyviolation` イベントを収集し、違反が 1 件でもあれば失敗する（`front/tests/support/e2e-test.ts`）。Report-Only でもこのイベントは発火するため、観測モードのうちから主要フローの違反 0 件を回帰テストで担保できる。
+**ディレクティブを足すとき**（外部画像・Web フォントの追加など）も同じ手順を踏む。強制モードでは違反した読み込み・通信が実際にブロックされ、画面上は無言で失敗することがあるため、E2E の違反チェック（下記）が通ることを確認してからマージする。
+
+**違反の検出**: E2E は全テストで `securitypolicyviolation` イベントを収集し、違反が 1 件でもあれば失敗する（`front/tests/support/e2e-test.ts`）。強制モードでは違反は機能の破損を意味するため、主要フローの違反 0 件を回帰テストで担保する（Report-Only でもこのイベントは発火するため、#104 の観測モードの段階から同じ検査を回している）。
 
 #### 導入時の観測記録（Issue #104 / 2026-10-07）
 
@@ -86,6 +88,16 @@
 | E2E 全 50 ケース（一覧・登録・進捗・完読・再読・検索・統計・削除・破損復旧） | ローカル本番ビルド・`local` モード | 違反 0 件 |
 | 一覧 `/` · 統計 `/stats` · ログイン `/auth/login` · 登録 `/books/new` · 詳細 `/books/:id`（閲覧のみ） | ローカル本番ビルド・`supabase` モード | 違反 0 件・コンソールエラー 0 件 |
 | ログイン（Google OAuth）· 書き込み | 本番 | 未観測（#109 で観測する） |
+
+#### 強制化前の観測記録（Issue #109 / 2026-10-08）
+
+観測時の本番デプロイ: `ba565d6`（PR #114 のマージ時点）。ヘッダーは `Content-Security-Policy-Report-Only` で、`connect-src` に本番の Supabase オリジンが含まれることを確認した。
+
+| 観測対象 | 環境 | 結果 |
+|---|---|---|
+| 一覧 `/`（データ読み込み完了まで）· 統計 `/stats` · ログイン `/auth/login` · 詳細 `/books/:id`（未ログイン表示） | 本番・未ログイン | 違反 0 件・コンソール出力 0 件。読み込んだリソースは同一オリジンのみ |
+| 「Googleでログイン」押下 → Supabase の認可 URL への遷移 | 本番 | ブラウザ上では未操作。`signInWithOAuth` はトップレベル遷移（`location` の書き換え）で認可 URL へ移り、フォーム送信を使わないため、`form-action` を含め CSP の対象外であることをコードで確認した |
+| ログイン後のセッション確立 · 書籍登録 · 進捗記録 · 感想保存 · 削除 | 本番・ログイン後 | **要確認（PR #115 のマージ前に観測する）** |
 
 **nonce 化を見送る判断**: `'unsafe-inline'` をやめて nonce 方式にするには、リクエストごとに nonce を発行する `middleware.ts`（Next.js 16 では `proxy.ts`）の新設が必要になり、全リクエストに処理を挟む構成変更になる。強制化そのものに nonce は不要なので、まず強制モードを有効にして「違反が実際にブロックされる」状態を早く得ることを優先し、nonce 化は別途判断する（md-view-my-collection と同じ判断）。
 

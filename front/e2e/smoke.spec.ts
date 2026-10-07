@@ -56,15 +56,14 @@ test("SM-5: 存在しない書籍 ID にアクセスしてもクラッシュし�
   expect(isDashboard || hasErrorUi).toBeTruthy();
 });
 
-test("SM-6: 全レスポンスにセキュリティヘッダーが付与される（#104）", async ({ request }) => {
+test("SM-6: 全レスポンスにセキュリティヘッダーが付与される（#104・#109）", async ({ request }) => {
   for (const path of ["/", "/stats", "/books/new", "/api/book-record/books"]) {
     const res = await request.get(path);
     const headers = res.headers();
 
-    expect(headers["content-security-policy-report-only"], path).toContain("default-src 'self'");
-    expect(headers["content-security-policy-report-only"], path).toContain(
-      "frame-ancestors 'none'"
-    );
+    expect(headers["content-security-policy"], path).toContain("default-src 'self'");
+    expect(headers["content-security-policy"], path).toContain("frame-ancestors 'none'");
+    expect(headers["content-security-policy-report-only"], path).toBeUndefined();
     expect(headers["x-content-type-options"], path).toBe("nosniff");
     expect(headers["x-frame-options"], path).toBe("DENY");
     expect(headers["referrer-policy"], path).toBe("strict-origin-when-cross-origin");
