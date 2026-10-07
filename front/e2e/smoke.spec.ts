@@ -70,3 +70,15 @@ test("SM-6: 全レスポンスにセキュリティヘッダーが付与され�
     expect(headers["permissions-policy"], path).toBe("camera=(), microphone=(), geolocation=()");
   }
 });
+
+test("SM-7: サイドバーにドライバー表示を出さず、ナビゲーションは残る（#118）", async ({ page }) => {
+  await page.goto("/");
+  // 本文側にも <aside> があるため、ロールではなく testid でシェルのサイドバーを特定する。
+  const sidebar = page.getByTestId("app-sidebar");
+
+  await expect(sidebar.getByRole("link", { name: /ホーム/ })).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: /統計レポート/ })).toBeVisible();
+  // local / supabase どちらの文言も出さない（実装内部の情報で、利用者には意味がないため）。
+  await expect(sidebar).not.toContainText("Playwright E2E");
+  await expect(sidebar).not.toContainText("Google OAuth");
+});

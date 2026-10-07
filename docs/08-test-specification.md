@@ -359,6 +359,7 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
 | SM-4 | コンソールエラーがない（主要ページ） | `goto("/")`, `goto("/stats")` | `console.error` が呼ばれない | Medium |
 | SM-5 | 存在しない書籍 ID にアクセスするとトップへリダイレクト | `goto("/books/nonexistent-id")` | URL が `/` またはエラー UI が visible | Medium |
 | SM-6 | 全レスポンスにセキュリティヘッダーが付与される（Issue #104・#109） | `request.get` で `/`・`/stats`・`/books/new`・`/api/book-record/books` | CSP（強制モード。Report-Only ヘッダーは付与しない）・`X-Content-Type-Options`・`X-Frame-Options`・`Referrer-Policy`・`Permissions-Policy` が期待値どおり | High |
+| SM-7 | サイドバーにドライバー表示を出さない（Issue #118） | `/` を開く | サイドバーにナビゲーション（ホーム・統計レポート）があり、`Playwright E2E` / `Google OAuth` の文言が無い | Low |
 
 **全ケース共通: CSP 違反 0 件**。全 E2E は `@playwright/test` ではなく `@tests/support/e2e-test` の `test` を使う。この `test` は各テストで `securitypolicyviolation` イベントを収集し、終了時に違反が 0 件であることを検証する（`docs/06-security-specification.md` §4.1）。新しい spec を追加するときも同じ import を使う。
 
