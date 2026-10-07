@@ -41,7 +41,7 @@
 
 - バリデーション違反は業務エラーとして扱い、画面に表示可能なメッセージを返す
 - `local` モードでデータ破損時は復旧処理を優先し、アプリ全体をクラッシュさせない
-- HTTP エラーは `{ message }` 形式の JSON で返す（例: `400` 不正リクエスト、`401` 未認証、`404` 未検出、`500` 内部エラー）
+- HTTP エラーは `{ message }` 形式の JSON で返す（例: `400` 不正リクエスト、`401` 未認証、`403` 権限なし（管理者以外）、`404` 未検出、`500` 内部エラー）
 
 ## 4. HTTP エンドポイント（`supabase` モード）
 
@@ -58,5 +58,5 @@
 | `POST /api/book-record/books/[id]/progress-logs` | 進捗記録追加 | Bearer 必須 |
 | `POST /api/book-record/books/[id]/reflection` | 感想保存 | Bearer 必須 |
 
-- 更新系（`POST` / `PATCH` / `DELETE`）は `Authorization: Bearer <token>` が必須。未認証は `401` を返す。
+- 更新系（`POST` / `PATCH` / `DELETE`）は `Authorization: Bearer <token>` が必須で、かつトークンのユーザーが `ADMIN_EMAIL` と一致する必要がある。未認証は `401`、管理者以外は `403`、認証設定の不足は `500` を返す（`06-security-specification.md` §6）。
 - 認証ガードの実体・トークン検証は `docs/06-security-specification.md` §6 を参照する。

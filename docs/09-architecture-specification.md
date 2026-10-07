@@ -67,6 +67,7 @@ flowchart TD
   - `DATABASE_URL`（**本番・開発の接続先。テストからは参照しない**）
   - `DIRECT_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`（サーバー用途のみ）
+  - `ADMIN_EMAIL`（サーバー専用。更新系 API を許可する唯一のメールアドレス。未設定なら更新系は `500` で拒否。`06-security-specification.md` §6）
 - テスト用の接続先は `front/.env.test`（gitignore 対象）または環境変数で指定する。`.env.local` には置かない
   - `TEST_DATABASE_URL`（IT / E2E 専用。未設定なら `docker-compose.test.yml` の使い捨てコンテナが既定値。ホストは `localhost` / `127.0.0.1` / `::1` のみ許可）
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` はこのリポジトリの `.env.local` では管理しない（Supabase Auth プロジェクト側で管理）

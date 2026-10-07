@@ -11,7 +11,7 @@ globs:
 
 - 認証方式はプロジェクト要件に応じて選択する（本プロジェクトは Supabase Auth / Google OAuth）。
 - API エンドポイントごとにアクセス制御を設定する（公開 / 認証必須 / ロールベース）。
-  - 本プロジェクト: 閲覧系 GET は未認証可、更新系（POST/PATCH）は `Authorization: Bearer <token>` 必須で未認証は `401`。
+  - 本プロジェクト: 閲覧系 GET は未認証可、更新系（POST/PATCH/DELETE）は `Authorization: Bearer <token>` 必須かつ `ADMIN_EMAIL` 一致のみ許可。未認証は `401`、管理者以外は `403`。
 
 ## 通信・アクセス制御
 

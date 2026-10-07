@@ -69,8 +69,8 @@
 
 - 分類定義と比率目安（正常 1 : 準正常+異常 2 以上）は `.claude/rules/testing.md` に従う。
 - **準正常系・異常系を各層で厚くする**（現状は正常系偏重のため）:
-  - **UT**: バリデーション境界値・上限超過・完読不整合、`parse*` の型不正/欠落/列挙外、`ApiRepository` の 401/404/500/JSON 崩れ、`parseStoragePayload` の破損/バージョン不一致
-  - **IT**: 未認証 POST → 401、存在しない id → 404、完読条件未達 → 400、`reflection` upsert 上書き、進捗＋書籍の `$transaction` 原子性、**監査列の自動設定**（`createdAt` / `updatedAt` を永続化層が採番すること・感想保存で書籍の `updatedAt` が進むこと）、**RLS ポリシー**（下記）
+  - **UT**: バリデーション境界値・上限超過・完読不整合、`parse*` の型不正/欠落/列挙外、`ApiRepository` の 401/404/500/JSON 崩れ、`auth-guard` の 401/403/500（`ADMIN_EMAIL` 不一致・大文字小文字/前後空白の同一視・未設定時の拒否）、`parseStoragePayload` の破損/バージョン不一致
+  - **IT**: 未認証 POST → 401、管理者以外の更新系 → 403 で DB 不変、存在しない id → 404、完読条件未達 → 400、`reflection` upsert 上書き、進捗＋書籍の `$transaction` 原子性、**監査列の自動設定**（`createdAt` / `updatedAt` を永続化層が採番すること・感想保存で書籍の `updatedAt` が進むこと）、**RLS ポリシー**（下記）
   - **E2E(supabase)**: 未ログインで更新系がブロックされる → ログイン後成功、API 失敗時の画面ハンドリング
 
 ### 2.3 モック方針
