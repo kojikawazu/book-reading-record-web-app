@@ -1,8 +1,8 @@
 # GitHub Actions のバージョン更新を Dependabot に任せる（#106）。
 # 手で一括置換すると、次の非推奨化（Node 20 → 24 のような）でまた手作業になる。
 #
-# 対象は workflows の `uses:` だけ。`run:` の中で固定している検査ツールのバージョン
-# （actionlint.yml の ACTIONLINT_VERSION）は Dependabot では更新されないため、手で上げる。
+# 対象は workflows の `uses:` だけ。Makefile で固定している検査ツールのイメージ
+# （ACTIONLINT_IMAGE）は Dependabot では更新されないため、手で上げる。
 #
 # npm パッケージの定期更新はここでは扱わない（PR が大量に来るため）。
 # 脆弱性は Dependabot alerts で通知される。

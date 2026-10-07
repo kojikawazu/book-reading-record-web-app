@@ -107,6 +107,6 @@ flowchart TD
   - `it` — `pnpm test:it`（IT・`docker-compose.test.yml` の使い捨て Postgres で実行。共有 DB 非接続）
   - `e2e` — `pnpm test:e2e`（Playwright / Chromium・local レーン・受け入れ Case 1-18）
 - `ci.yml` とは別に、変更範囲で振り分けない独立したワークフローを 2 つ持ち、全 PR で常に実行する:
-  - `actionlint.yml` — ワークフロー自身の静的解析（`.claude/rules/github-actions.md`）
+  - `actionlint.yml` — ワークフロー自身の静的解析。実体は `make actionlint`（actionlint 公式 Docker イメージ・shellcheck 同梱。ローカルと同じコマンド）（`.claude/rules/github-actions.md`）
   - `secret-scan.yml` — 鍵・`.env` などの秘匿ファイルが Git 管理下（または `.gitignore` 漏れの追跡候補）にないかを検査する。実体は `scripts/check-secret-files.sh`（`.claude/rules/static-analysis.md`「秘匿ファイルの混入検出」）
-- ワークフローが使うアクション（`uses:`）のバージョンは Dependabot が毎週月曜に確認し、更新を 1 本の PR にまとめて出す（`.github/dependabot.yml`）。`run:` の中で固定している検査ツールのバージョン（`ACTIONLINT_VERSION`）は対象外のため手で上げる
+- ワークフローが使うアクション（`uses:`）のバージョンは Dependabot が毎週月曜に確認し、更新を 1 本の PR にまとめて出す（`.github/dependabot.yml`）。`Makefile` で固定している検査ツールのイメージ（`ACTIONLINT_IMAGE`）は対象外のため手で上げる

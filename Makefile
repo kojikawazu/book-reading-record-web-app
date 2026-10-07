@@ -10,13 +10,19 @@ FRONT := front
 COMPOSE_FILE := $(FRONT)/docker-compose.test.yml
 DB_SERVICE := db
 
+# actionlint の公式イメージ。actionlint 本体と shellcheck / pyflakes が同梱されており、
+# run: の中のシェルまで必ず検査される（brew の actionlint は shellcheck を連れてこない）。
+# タグに加えて digest でも固定し、CI とローカルで中身まで同一のイメージを使う。
+# 更新は手で行う（Dependabot は Makefile 内のイメージを更新しない）。
+ACTIONLINT_IMAGE := rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+
 # 引数なし `make` は help を表示する（誤って dev 等を起動しない安全側）
 .DEFAULT_GOAL := help
 
 .PHONY: help \
 	install e2e-install \
 	dev build start \
-	lint lint-fix format format-check check secret-scan \
+	lint lint-fix format format-check check secret-scan actionlint \
 	test test-watch test-it test-e2e test-e2e-ui test-e2e-headed test-all \
 	prisma-generate prisma-pull prisma-validate \
 	db-up db-down db-logs db-psql \
@@ -59,6 +65,10 @@ check: format-check lint ## 静的ゲート一括（format:check → lint）
 
 secret-scan: ## 鍵・.env が Git 管理下（または追跡候補）にないか検査（CI と同じスクリプト）
 	./scripts/check-secret-files.sh
+
+# check には含めない。ワークフローを触るときしか要らず、Docker も必要になるため。
+actionlint: ## GitHub Actions のワークフローを検査（shellcheck 込み・要 Docker・CI と同じコマンド）
+	docker run --rm -v "$(CURDIR)":/repo -w /repo $(ACTIONLINT_IMAGE) -color
 
 ## ---- Test (3層: UT / IT / E2E) --------------------------------------------
 

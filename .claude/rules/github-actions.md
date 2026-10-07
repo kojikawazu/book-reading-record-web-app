@@ -7,7 +7,7 @@ globs: ".github/workflows/**"
 
 本ルールは 2 つを定める。
 
-1. **ワークフローの静的解析**: ワークフロー自体の誤りを actionlint で機械的に潰す。実装は `.github/workflows/actionlint.yml`。
+1. **ワークフローの静的解析**: ワークフロー自体の誤りを actionlint で機械的に潰す。実装は `.github/workflows/actionlint.yml`（コマンドの正本は `Makefile` の `actionlint` ターゲット）。
 2. **発火ルール**: **「変更した内容に関係のあるジョブだけを動かす」**。ドキュメントやルールの更新でテスト・ビルド・デプロイを回さない（CI 時間・コストの浪費、キュー待ちによる他 PR のブロック、無意味なデプロイの発生を防ぐ）。実装は `.github/workflows/ci.yml`。
 
 markdownlint の対象・有効ルールは `.markdownlint-cli2.jsonc` を単一の真実とする（ローカル実行と CI で同じ設定が効く）。
@@ -36,14 +36,16 @@ markdownlint の対象・有効ルールは `.markdownlint-cli2.jsonc` を単一
 
 - **パスフィルタをかけず、全 PR で常に実行する**。実行は数秒で終わるため、「ワークフローを変更したときだけ動かす」ための判定ジョブ（`changes`）を経由させると**判定のほうが検査より高くつく**。常時起動なので必須チェックにしても pending で詰まらない。
 - **`actions/checkout` を必ず先に置く**。actionlint は Git リポジトリの中から `.github/workflows` を探すため、リポジトリ外で実行するとエラー終了する。
-- **バージョンを固定する**。`latest` にすると、コードを変えていないのに新リリースの検査強化で CI が落ちる。更新は依存更新として明示的に行う（`run:` 内のバージョンは Dependabot では更新されない）。
-- **shellcheck の追加設定は不要**。GitHub ホストの ubuntu ランナーにはプリインストール済みで、PATH にあれば `run:` のシェルスクリプトも自動で併せて検査される。
-- **バイナリ取得はチェックサム検証を伴わない**ため、リスクはバージョン固定（スクリプト URL・本体の双方）で抑える。あわせて**このジョブにシークレットを渡さず `permissions: contents: read` に絞る**（万一取得物が不正でも、読み取り専用のチェックアウト以外に到達できない）。
+- **CI とローカルで同じコマンド（`make actionlint`）を呼ぶ**。実体は**公式 Docker イメージ**（`rhysd/actionlint`）で、actionlint 本体と shellcheck / pyflakes が同梱されている。コマンド文字列を workflow と手元の手順に書き写さない（`duplication.md`）。
+- **イメージはタグと digest の双方で固定する**（`Makefile` の `ACTIONLINT_IMAGE`）。`latest` にすると、コードを変えていないのに新リリースの検査強化で CI が落ちる。digest まで固定すると、同じタグの再プッシュ（すり替え）も検知される。更新は依存更新として明示的に行う（`Makefile` 内のイメージは Dependabot では更新されない）。
+- **shellcheck をランナーのプリインストールに頼らない**。イメージ同梱の shellcheck を使うことで、CI とローカルで `run:` の中身を検査するバージョンが揃う。
+- **このジョブにシークレットを渡さず `permissions: contents: read` に絞る**。外部（Docker Hub）から取得したものを実行するため、万一取得物が不正でも読み取り専用のチェックアウト以外に到達できないようにする。
 
 ### ローカルでの実行
 
-- **push する前に手元で実行する**（`brew install actionlint`）。引数なしで実行すると `.github/workflows` を自動検出して全ワークフローを検査し、指摘があれば終了コード 1 で落ちる。
-- **手元に shellcheck が無いと `run:` の中身は検査されない**（actionlint 自体は通る）。ローカルで exit 0 でも、CI で shellcheck 由来の指摘が出ることがある。
+- **push する前に手元で `make actionlint` を実行する**（要 Docker）。`.github/workflows` を自動検出して全ワークフローを検査し、指摘があれば終了コード 1 で落ちる。
+- **`brew install actionlint` / `go install` を既定の手段にしない。** どちらも shellcheck を連れてこないため、**手元に shellcheck が無いと `run:` の中身の検査だけが静かに飛ぶ**（エラーにも警告にもならず exit 0）。「手元では通ったのに CI で落ちる」が、レビューで最も見落とされる層で起きる。
+- Docker が使えない環境に限り、バイナリと **`brew install shellcheck` を併せて入れる**。要件は「**CI とローカルで shellcheck の有無を一致させること**」であり、手段はその次である。
 
 ### 抑制と設定
 
