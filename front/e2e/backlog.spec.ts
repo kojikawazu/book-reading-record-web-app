@@ -5,7 +5,7 @@
  * 現時点で skip は無い（B2 は Issue #10 実装時に追加する）。
  *
  * カバレッジ:
- *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-S1（**実装済み・有効**）
+ *   B1: 書籍削除（Issue #9）  → B1-N1, B1-N2, B1-N3, B1-S1, B1-S2（**実装済み・有効**）
  *   B2: 書籍イメージ（Issue #10）→ UI・外部URL表示が絡むため、Issue #10 実装時に別途追加する
  *   B3: 著者名任意入力（Issue #11）→ B3-N1, B3-S1, B3-S2（**実装済み・有効**）
  *   B4: 総ページ数なし完読（Issue #12）→ B4-N1, B4-N2, B4-N3（**実装済み・有効**）
@@ -165,6 +165,53 @@ test("B1-S2: 削除確認を出さずにページを離れても削除されな�
   await page.goto("/");
 
   await expect(page.getByTestId("section-reading")).toContainText("未確定Book");
+});
+
+test("B1-N3: 詳細の操作ボタンは書籍情報カードの直上（カードの外）にあり、ヘッダーには置かない（#116）", async ({
+  page,
+}) => {
+  // 再読開始は完読時にしか出ないため、完読済みの書籍で 3 つのボタンを揃えて検証する。
+  const payload: SeedPayload = {
+    version: 1,
+    books: [
+      {
+        id: "book-b1-n3",
+        title: "配置確認Book",
+        author: "著者",
+        format: "paper",
+        totalPages: 100,
+        currentPage: 100,
+        tags: [],
+        status: "completed",
+        createdAt: isoDaysAgo(5),
+        updatedAt: isoDaysAgo(1),
+        completedAt: isoDaysAgo(1),
+      },
+    ],
+    progressLogs: [],
+  };
+  await seedStorage(page, payload);
+  await page.goto("/books/book-b1-n3");
+
+  const actions = page.getByTestId("book-actions");
+  await expect(actions.getByRole("link", { name: "ダッシュボードへ戻る" })).toBeVisible();
+  await expect(actions.getByTestId("reread-button")).toBeVisible();
+  await expect(actions.getByTestId("delete-book-button")).toBeVisible();
+
+  // ヘッダー（共通シェルの banner）にも、書籍情報カードの中にも置かれていない。
+  const header = page.getByRole("banner");
+  await expect(header.getByRole("link", { name: "ダッシュボードへ戻る" })).toHaveCount(0);
+  await expect(header.getByTestId("delete-book-button")).toHaveCount(0);
+  const card = page.getByTestId("book-info-card");
+  await expect(card.getByTestId("delete-book-button")).toHaveCount(0);
+
+  // 操作行がカードより上にある。
+  const actionsBox = await actions.boundingBox();
+  const cardBox = await card.boundingBox();
+  if (!actionsBox || !cardBox) {
+    throw new Error("操作行または書籍情報カードが描画されていない");
+  }
+  expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(cardBox.y);
 });
 
 // ─── B3: 著者任意入力（Issue #11）────────────────────────────────────────────

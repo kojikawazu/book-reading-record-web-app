@@ -254,15 +254,14 @@ export default function BookDetailPage() {
   }
 
   return (
-    <OrganicShell
-      title={book.title}
-      subtitle="進捗記録と完読メモ"
-      contentTestId="book-detail-page"
-      action={
-        <>
-          <Link href="/" className="btn-secondary inline-flex px-4 py-2 text-sm">
-            ダッシュボードへ戻る
-          </Link>
+    <OrganicShell title={book.title} subtitle="進捗記録と完読メモ" contentTestId="book-detail-page">
+      {/* 書籍に対する操作は、書籍情報カードの直上（カードの外）に置く。ヘッダーに置くと、取り消せない
+          削除がどの書籍に対するものか視覚的に結びつかないため（Issue #116）。 */}
+      <div data-testid="book-actions" className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/" className="btn-secondary inline-flex px-4 py-2 text-sm">
+          ダッシュボードへ戻る
+        </Link>
+        <div className="flex flex-wrap gap-2">
           {book.status === "completed" && (
             <button
               type="button"
@@ -281,9 +280,9 @@ export default function BookDetailPage() {
           >
             削除
           </button>
-        </>
-      }
-    >
+        </div>
+      </div>
+
       {deleteConfirmOpen && (
         <section
           data-testid="delete-confirm-dialog"
@@ -321,7 +320,7 @@ export default function BookDetailPage() {
         </section>
       )}
 
-      <section className="panel-card p-5 md:p-6">
+      <section data-testid="book-info-card" className="panel-card p-5 md:p-6">
         <h2
           data-testid="book-title"
           className="text-3xl font-bold tracking-tight text-[color:var(--foreground)]"
