@@ -27,7 +27,7 @@ jobs:
     steps:
       # actionlint は Git リポジトリの中から .github/workflows を探すため、
       # チェックアウトを必ず先に置く（リポジトリ外で実行するとエラー終了する）。
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # バージョンを固定する。latest にすると、コードを変えていないのに新リリースの
       # 検査強化で CI が落ちる。更新は依存更新として明示的に行う（run: 内のバージョンは
