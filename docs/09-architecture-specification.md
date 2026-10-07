@@ -109,3 +109,4 @@ flowchart TD
 - `ci.yml` とは別に、変更範囲で振り分けない独立したワークフローを 2 つ持ち、全 PR で常に実行する:
   - `actionlint.yml` — ワークフロー自身の静的解析（`.claude/rules/github-actions.md`）
   - `secret-scan.yml` — 鍵・`.env` などの秘匿ファイルが Git 管理下（または `.gitignore` 漏れの追跡候補）にないかを検査する。実体は `scripts/check-secret-files.sh`（`.claude/rules/static-analysis.md`「秘匿ファイルの混入検出」）
+- ワークフローが使うアクション（`uses:`）のバージョンは Dependabot が毎週月曜に確認し、更新を 1 本の PR にまとめて出す（`.github/dependabot.yml`）。`run:` の中で固定している検査ツールのバージョン（`ACTIONLINT_VERSION`）は対象外のため手で上げる

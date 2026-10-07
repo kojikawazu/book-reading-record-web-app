@@ -1,0 +1,24 @@
+# GitHub Actions のバージョン更新を Dependabot に任せる（#106）。
+# 手で一括置換すると、次の非推奨化（Node 20 → 24 のような）でまた手作業になる。
+#
+# 対象は workflows の `uses:` だけ。`run:` の中で固定している検査ツールのバージョン
+# （actionlint.yml の ACTIONLINT_VERSION）は Dependabot では更新されないため、手で上げる。
+#
+# npm パッケージの定期更新はここでは扱わない（PR が大量に来るため）。
+# 脆弱性は Dependabot alerts で通知される。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    # アクションごとに PR が分かれると、マージのたびに CI が何度も走るため 1 本にまとめる。
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: chore(ci)
