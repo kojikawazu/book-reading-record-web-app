@@ -69,7 +69,7 @@
 | `base-uri` / `form-action` | `'self'` | `<base>` の書き換えと、外部へのフォーム送信を防ぐ |
 | `object-src` | `'none'` | プラグイン（`<object>` / `<embed>`）を使わない |
 | `frame-ancestors` | `'none'` | 他サイトへの埋め込みを禁止する |
-| `script-src` | `'self' 'unsafe-inline'` | Next.js のハイドレーション用インラインスクリプトのため `'unsafe-inline'` が必要（外すと `script-src-elem` 違反になることを E2E で確認済み）。本番ビルドでは `'unsafe-eval'` が不要なため許可しない |
+| `script-src` | `'self' 'unsafe-inline'` | Next.js のハイドレーション用インラインスクリプトのため `'unsafe-inline'` が必要（外すと `script-src-elem` 違反になることを E2E で確認済み）。本番ビルドでは `'unsafe-eval'` が不要なため許可しない。**開発サーバー（`NODE_ENV === "development"`）に限り `'unsafe-eval'` を足す**。開発モードの React はコールスタックの再構築などのデバッグ機能で `eval()` を使い、無いとコンソールエラーになるため（Issue #117）。`development` と完全一致したときだけ足し、`production` / `test` / 未設定では足さない |
 | `style-src` | `'self' 'unsafe-inline'` | Tailwind / React のインラインスタイルのため |
 | `img-src` | `'self' data: blob:` | 外部画像を読み込まないため `https:` は許可しない。書影表示（Issue #10）に着手する際に、画像の配信元だけを足す |
 | `font-src` | `'self' data:` | 現在 Web フォントは読み込んでいない（システムフォント）。追加する場合も自己ホストに限り、外部 CDN を許可しない |
@@ -80,6 +80,8 @@
 **ディレクティブを足すとき**（外部画像・Web フォントの追加など）も同じ手順を踏む。強制モードでは違反した読み込み・通信が実際にブロックされ、画面上は無言で失敗することがあるため、E2E の違反チェック（下記）が通ることを確認してからマージする。
 
 **違反の検出**: E2E は全テストで `securitypolicyviolation` イベントを収集し、違反が 1 件でもあれば失敗する（`front/tests/support/e2e-test.ts`）。強制モードでは違反は機能の破損を意味するため、主要フローの違反 0 件を回帰テストで担保する（Report-Only でもこのイベントは発火するため、#104 の観測モードの段階から同じ検査を回している）。
+
+**E2E は本番ビルド（`next build && next start`）で動くため、開発サーバーだけで起きる違反は検出できない。** CSP を変更したときは、`pnpm dev` でも主要画面を開き、コンソールにエラーが出ないことを確認する（#117 は強制化の後、開発時だけ React の `eval()` がブロックされたもので、E2E は通っていた）。
 
 #### 導入時の観測記録（Issue #104 / 2026-10-07）
 

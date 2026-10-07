@@ -359,6 +359,7 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
 | SM-4 | コンソールエラーがない（主要ページ） | `goto("/")`, `goto("/stats")` | `console.error` が呼ばれない | Medium |
 | SM-5 | 存在しない書籍 ID にアクセスするとトップへリダイレクト | `goto("/books/nonexistent-id")` | URL が `/` またはエラー UI が visible | Medium |
 | SM-6 | 全レスポンスにセキュリティヘッダーが付与される（Issue #104・#109） | `request.get` で `/`・`/stats`・`/books/new`・`/api/book-record/books` | CSP（強制モード。Report-Only ヘッダーは付与しない）・`X-Content-Type-Options`・`X-Frame-Options`・`Referrer-Policy`・`Permissions-Policy` が期待値どおり | High |
+| SM-7 | サイドバーにドライバー表示を出さない（Issue #118） | `/` を開く | サイドバーにナビゲーション（ホーム・統計レポート）があり、`Playwright E2E` / `Google OAuth` の文言が無い | Low |
 
 **全ケース共通: CSP 違反 0 件**。全 E2E は `@playwright/test` ではなく `@tests/support/e2e-test` の `test` を使う。この `test` は各テストで `securitypolicyviolation` イベントを収集し、終了時に違反が 0 件であることを検証する（`docs/06-security-specification.md` §4.1）。新しい spec を追加するときも同じ import を使う。
 
@@ -431,6 +432,7 @@ import は `@/`（`src/`）と `@tests/`（`tests/`）のパスエイリアス�
 |---|---|---|---|---|
 | B1-N1 | 書籍を削除するとダッシュボードから消える | 書籍登録 → 詳細 → 削除ボタン → 確認 | 一覧に表示されない | High |
 | B1-N2 | 削除後に関連進捗ログも消える | seed（書籍+ログ） → 削除 | localStorage の `progressLogs` に当該 bookId がない | High |
+| B1-N3 | 詳細の操作ボタンが書籍情報カードの直上（カードの外）にある（Issue #116） | seed（完読済み書籍） → 詳細 | 操作行に「ダッシュボードへ戻る」「再読開始」「削除」があり、ヘッダーにもカード内にも無い。操作行の下端がカードの上端以下 | Medium |
 | B1-S1 | 削除確認ダイアログでキャンセルすると削除されない | 削除ボタン → キャンセル | 確認パネルが閉じて詳細ページに留まり、ダッシュボードの一覧に書籍が残る | High |
 | B1-S2 | 削除確認を出さずにページを離れても削除されない | 削除ボタン → 確定せず離脱 | 一覧に書籍が残る（削除ボタン自体は削除しない） | Medium |
 

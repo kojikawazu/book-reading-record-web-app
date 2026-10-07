@@ -81,7 +81,10 @@ export const OrganicShell = ({
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden bg-[color:var(--background)] text-[color:var(--foreground)]">
-      <aside className="hidden w-80 shrink-0 flex-col bg-[color:var(--background-soft)] px-6 py-6 lg:flex">
+      <aside
+        data-testid="app-sidebar"
+        className="hidden w-80 shrink-0 flex-col bg-[color:var(--background-soft)] px-6 py-6 lg:flex"
+      >
         <div className="mb-10 flex items-center gap-4 px-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-[32px] bg-[color:var(--accent)] text-xl font-black text-white shadow-[0_10px_20px_rgba(129,178,154,0.35)]">
             L
@@ -117,10 +120,6 @@ export const OrganicShell = ({
             );
           })}
         </nav>
-
-        <div className="mt-7 rounded-[28px] border border-[color:var(--border)] bg-white/70 p-4 text-xs text-[color:var(--foreground)]/72">
-          <p>{authRequired ? "Supabase Auth / Google OAuth" : "localStorage / Playwright E2E"}</p>
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

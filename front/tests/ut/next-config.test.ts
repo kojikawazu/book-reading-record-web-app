@@ -4,16 +4,17 @@ const SUPABASE_URL = "https://example-ref.supabase.co";
 // 強制モードのヘッダー名（#109）。Report-Only（観測モード）に戻っていないことも併せて検証する。
 const CSP_HEADER = "Content-Security-Policy";
 
-// next.config.ts は import 時に NEXT_PUBLIC_SUPABASE_URL を読むため、env を切り替えて再読み込みする。
-// undefined を渡すと未設定（local モードや CI のビルド）を再現する。
-const loadHeaders = async (supabaseUrl: string | undefined) => {
+// next.config.ts は import 時に NEXT_PUBLIC_SUPABASE_URL と NODE_ENV を読むため、env を切り替えて
+// 再読み込みする。undefined を渡すと未設定（local モードや CI のビルド）を再現する。
+// NODE_ENV の既定は本番（Vitest 実行時の "test" のままにすると、本番の CSP を検証したことにならない）。
+const loadHeaders = async (
+  supabaseUrl: string | undefined,
+  nodeEnv: string | undefined = "production"
+) => {
   vi.resetModules();
   vi.unstubAllEnvs();
-  if (supabaseUrl === undefined) {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", undefined);
-  } else {
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", supabaseUrl);
-  }
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", supabaseUrl);
+  vi.stubEnv("NODE_ENV", nodeEnv);
   // next.config.ts は src/ の外（front/ 直下）にあり @/ エイリアスで指せないため、ここだけ相対パスで読む。
   const { default: config } = await import("../../next.config");
   if (!config.headers) {
@@ -71,6 +72,13 @@ describe("next.config.ts headers()", () => {
     expect(headers).not.toHaveProperty("Content-Security-Policy-Report-Only");
   });
 
+  it("開発モードでは React のデバッグ機能のため script-src に 'unsafe-eval' を足す（#117）", async () => {
+    const rules = await loadHeaders(SUPABASE_URL, "development");
+    const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
+
+    expect(csp["script-src"]).toBe("'self' 'unsafe-inline' 'unsafe-eval'");
+  });
+
   // --- 準正常系 ---
   it("Supabase の URL が未設定でも connect-src は 'self' だけになり、文字列が壊れない", async () => {
     const rules = await loadHeaders(undefined);
@@ -90,12 +98,25 @@ describe("next.config.ts headers()", () => {
     }
   });
 
-  it("script-src に 'unsafe-eval' を許可しない", async () => {
-    const rules = await loadHeaders(SUPABASE_URL);
+  it("本番では script-src に 'unsafe-eval' を許可しない", async () => {
+    const rules = await loadHeaders(SUPABASE_URL, "production");
     const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
 
     expect(csp["script-src"]).toBe("'self' 'unsafe-inline'");
   });
+
+  it.each([
+    ["test", "test"],
+    ["未設定", undefined],
+  ])(
+    "NODE_ENV が development 以外（%s）なら 'unsafe-eval' を足さない（判定不能を緩い側に倒さない）",
+    async (_label, nodeEnv) => {
+      const rules = await loadHeaders(SUPABASE_URL, nodeEnv);
+      const csp = parseCsp(toMap(rules[0]?.headers ?? [])[CSP_HEADER]!);
+
+      expect(csp["script-src"]).toBe("'self' 'unsafe-inline'");
+    }
+  );
 
   it("フレーム埋め込み・プラグイン・base 書き換えを禁止する", async () => {
     const rules = await loadHeaders(SUPABASE_URL);

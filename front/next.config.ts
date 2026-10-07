@@ -4,6 +4,11 @@ import type { NextConfig } from "next";
 // local モードや CI のように未設定のビルドでも CSP の文字列が壊れないよう、空文字を許容する。
 const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
+// 開発モードの React は、コールスタックの再構築などのデバッグ機能で eval() を使う（本番ビルドでは
+// 使わない）。`next dev` のときだけ 'unsafe-eval' を足す。"development" と完全一致したときだけ
+// 許可し、production / test / 未設定では足さない（判定不能を緩い側に倒さないため。Issue #117）。
+const devScriptSrc = process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+
 /**
  * Content-Security-Policy のディレクティブ。各値の理由は docs/06-security-specification.md
  * 「セキュリティヘッダー」を正とする。
@@ -17,7 +22,7 @@ const cspDirectives = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${devScriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
