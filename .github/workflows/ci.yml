@@ -218,7 +218,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: front/playwright-report/
@@ -237,7 +237,7 @@ jobs:
       # 対象・除外・有効ルールは .markdownlint-cli2.jsonc を単一の真実とする
       # （ローカルの `pnpm dlx markdownlint-cli2` と CI で同じ設定が効くようにする）。
       - name: Markdown lint
-        uses: DavidAnson/markdownlint-cli2-action@v24
+        uses: DavidAnson/markdownlint-cli2-action@v25
 
       # リンク切れは --offline で内部リンクのみ検査する。外部 URL を叩くと相手先の
       # 一時的な障害やレート制限で CI が落ち、警告の常態化を招くため対象にしない。
